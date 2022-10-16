@@ -19,7 +19,7 @@ inputs:
     required: true
 steps:
   - name: Set up QEMU for x86 architecture on arm.
-    if: ${{ architecture == 'x86-64' && runner.arch == 'ARM64' }}
+    if: ${{ github.event.inputs.architecture == 'x86-64' && runner.arch == 'ARM64' }}
     id: qemu-x86_64
     uses: docker/setup-qemu-action@v1
     with:
@@ -27,7 +27,7 @@ steps:
       platforms: x86_64
 
   - name: Set up QEMU for emulating arm architecture on amd or intel.
-    if: ${{ architecture == 'arm-64' && (runner.arch == 'X86' || runner.arch == 'X64') }}
+    if: ${{ github.event.inputs.architecture == 'arm-64' && (runner.arch == 'X86' || runner.arch == 'X64') }}
     id: qemu-arm64
     uses: docker/setup-qemu-action@v1
     with:
