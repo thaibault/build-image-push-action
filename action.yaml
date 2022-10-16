@@ -3,7 +3,6 @@ inputs:
   architecture:
     default: 'x86-64'
     description: 'Architecture name to build for.'
-    required: true
   build-args:
     description: 'Build arguments to to use for building image.'
   name:
