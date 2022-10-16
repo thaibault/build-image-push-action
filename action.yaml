@@ -20,9 +20,6 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - run: echo Hello ${{ inputs.architecture }}.
-      shell: bash
-
     - name: Set up QEMU for x86 architecture on arm.
       if: false
       #if: ${{ inputs.architecture == 'x86-64' && runner.arch == 'ARM64' }}
