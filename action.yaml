@@ -1,5 +1,8 @@
-name: Build x86-64 image and push
+name: Build x86-64 or arm-64 images pushes
 inputs:
+  architecture:
+    default: x86-64
+    required: true
   name:
     required: true
   password:
@@ -10,12 +13,20 @@ inputs:
     required: true
 steps:
   - name: Set up QEMU for x86 architecture on arm.
-    if: ${{ runner.arch == 'ARM64'  }}
+    if: ${{ inputs.architecture == 'x86-64' && runner.arch == 'ARM64' }}
     id: qemu-x86_64
     uses: docker/setup-qemu-action@v1
     with:
       image: tonistiigi/binfmt:latest
       platforms: x86_64
+
+  - name: Set up QEMU for emulating arm architecture on amd or intel.
+    if: ${{ inputs.architecture == 'arm-64' && runner.arch == 'X86' || runner.arch == 'X64' }}
+    id: qemu-arm64
+    uses: docker/setup-qemu-action@v1
+    with:
+      image: tonistiigi/binfmt:latest
+      platforms: aarch64
 
   - uses: actions/checkout@v2
 
@@ -35,9 +46,21 @@ steps:
       tags: latest
 
   - name: Build x86-64 and push image
+    if: ${{ inputs.architecture == 'x86-64' }}
     uses: docker/build-push-action@v2
     with:
       context: .
       push: true
       tags: ${{ steps.meta.outputs.tags }}-x86-64
+      labels: ${{ steps.meta.outputs.labels }}
+
+  - name: Build arm-64 and push image
+    if: ${{ inputs.architecture == 'arm-64' }}
+    uses: docker/build-push-action@v2
+    with:
+      build-args: ${{ inputs.build-args }}
+      context: .
+      platforms: linux/arm64/v8
+      push: true
+      tags: ${{ steps.meta.outputs.tags }}-arm-64
       labels: ${{ steps.meta.outputs.labels }}
