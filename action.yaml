@@ -2,14 +2,21 @@ name: Build x86-64 or arm-64 images pushes
 inputs:
   architecture:
     default: x86-64
+    description: 'Architecture name to build for.'
     required: true
+  build-args:
+    description: 'Build arguments to to use for building image.'
   name:
+    description: 'Image name to build.'
     required: true
   password:
+    description: 'Password to log in to github registry.'
     required: true
   registry:
+    description: 'Registry to use for image upload.'
     required: true
   username:
+    description: 'Login to use for authenticating against registry.'
     required: true
 steps:
   - name: Set up QEMU for x86 architecture on arm.
