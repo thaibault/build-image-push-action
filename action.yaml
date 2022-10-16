@@ -1,7 +1,7 @@
 name: Build x86-64 or arm-64 images pushes
 inputs:
   architecture:
-    default: x86-64
+    default: 'x86-64'
     description: 'Architecture name to build for.'
     required: true
   build-args:
