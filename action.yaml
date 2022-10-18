@@ -5,6 +5,10 @@ inputs:
     description: 'Architecture name to build for.'
   build-args:
     description: 'Build arguments to to use for building image.'
+  tags:
+    description: 'Image tags to use for registering.'
+  labels:
+    description: 'Image labels to annotate registered image with.'
   name:
     description: 'Image name to build.'
     required: true
@@ -69,5 +73,5 @@ runs:
             'linux/amd64'
           }}
         push: true
-        tags: ${{ steps.meta.outputs.tags }}
-        labels: ${{ steps.meta.outputs.labels }}
+        tags: ${{ inputs.tags || steps.meta.outputs.tags }}
+        labels: ${{ inputs.labels || steps.meta.outputs.labels }}
