@@ -1,7 +1,7 @@
 name: Build x86-64 or arm-64 images pushes
 inputs:
   architecture:
-    default: 'x86-64'
+    default: 'all'
     description: 'Architecture name to build for.'
   build-args:
     description: 'Build arguments to to use for building image.'
@@ -22,6 +22,7 @@ runs:
   steps:
     - name: Set up QEMU for emulating arm architecture on amd or intel.
       if: ${{
+        inputs.architecture == 'all' ||
         inputs.architecture == 'arm-64' &&
         (runner.arch == 'X86' || runner.arch == 'X64') ||
         inputs.architecture == 'x86-64' && runner.arch == 'ARM64'
@@ -45,18 +46,7 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - name: Build x86-64 and push image
-      if: ${{ inputs.architecture == 'x86-64' }}
-      uses: docker/build-push-action@v2
-      with:
-        build-args: ${{ inputs.build-args }}
-        context: .
-        push: true
-        tags: ${{ steps.meta.outputs.tags }}-${{ inputs.architecture }}
-        labels: ${{ steps.meta.outputs.labels }}
-
-    - name: Build arm-64 and push image
-      if: ${{ inputs.architecture == 'arm-64' }}
+    - name: Build for ${{ inputs.architecture }} architecture and push image
       uses: docker/build-push-action@v2
       with:
         build-args: ${{ inputs.build-args }}
@@ -64,5 +54,5 @@ runs:
         # NOTE: Build for arm and x86 architecture with 64 bit.
         platforms: linux/amd64,linux/arm64
         push: true
-        tags: ${{ steps.meta.outputs.tags }}-${{ inputs.architecture }}
+        tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
