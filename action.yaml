@@ -20,13 +20,21 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Set up QEMU for emulating arm architecture on amd or intel.
-      if: |
+    - if: |
         inputs.architecture == 'all' ||
         inputs.architecture == 'arm-64' &&
         (runner.arch == 'X86' || runner.arch == 'X64') ||
         inputs.architecture == 'x86-64' && runner.arch == 'ARM64'
+      name: Set up QEMU for emulating arm architecture on x86 or vice versa.
       uses: docker/setup-qemu-action@v1
+
+    - if: |
+        inputs.architecture == 'all' ||
+        inputs.architecture == 'arm-64' &&
+        (runner.arch == 'X86' || runner.arch == 'X64') ||
+        inputs.architecture == 'x86-64' && runner.arch == 'ARM64'
+      name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
 
     - uses: actions/checkout@v2
 
