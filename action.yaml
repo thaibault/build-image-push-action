@@ -59,7 +59,13 @@ runs:
         build-args: ${{ inputs.build-args }}
         context: .
         # NOTE: Build for arm and x86 architecture with 64 bit.
-        platforms: linux/amd64,linux/arm64
+        platforms: |
+          inputs.architecture == 'all' &&
+          'linux/amd64,linux/arm64' ||
+          inputs.architecture == 'arm-64' &&
+          'linux/arm64' ||
+          inputs.architecture == 'x86-64' &&
+          'linux/amd64'
         push: true
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
