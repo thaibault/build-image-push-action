@@ -3,33 +3,33 @@ name: Build x86-64 or arm-64 images pushes
 inputs:
   architecture:
     default: all
-    description: 'Architecture name to build for.'
+    description: Architecture name to build for.
     type: choice
     options:
       - all
       - arm-64
       - x86-64
   build-args:
-    description: 'Build arguments to to use for building image.'
+    description: Build arguments to to use for building image.
   tags:
-    description: 'Image tags to use for registering.'
+    description: Image tags to use for registering.
   labels:
-    description: 'Image labels to annotate registered image with.'
+    description: Image labels to annotate registered image with.
   name:
-    description: 'Image name to build.'
+    description: Image name to build.
     required: true
   password:
-    description: 'Password to log in to github registry.'
+    description: Password to log in to github registry.
     required: true
   registry:
-    description: 'Registry to use for image upload.'
+    description: Registry to use for image upload.
     required: true
   username:
-    description: 'Login to use for authenticating against registry.'
+    description: Login to use for authenticating against registry.
     required: true
 
 runs:
-  using: "composite"
+  using: composite
   steps:
     - if: |
         inputs.architecture == 'all' ||
