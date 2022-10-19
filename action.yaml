@@ -4,6 +4,7 @@ inputs:
   architecture:
     default: all
     description: 'Architecture name to build for.'
+    type: choice
     options:
       - all
       - arm-64
