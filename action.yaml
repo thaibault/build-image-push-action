@@ -1,8 +1,13 @@
 name: Build x86-64 or arm-64 images pushes
+
 inputs:
   architecture:
-    default: 'all'
+    default: all
     description: 'Architecture name to build for.'
+    options:
+      - all
+      - arm-64
+      - x86-64
   build-args:
     description: 'Build arguments to to use for building image.'
   tags:
@@ -21,6 +26,7 @@ inputs:
   username:
     description: 'Login to use for authenticating against registry.'
     required: true
+
 runs:
   using: "composite"
   steps:
