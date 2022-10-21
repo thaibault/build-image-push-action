@@ -73,7 +73,7 @@ runs:
     - name: Build for ${{ inputs.architecture }} architecture and push image
       uses: docker/build-push-action@v3.2.0
       with:
-        build-args: ${{ inputs.build-args }}
+        build-args: ${{ startsWith(inputs.build-args, '[') && join(fromJSON(inputs.build-args), ' ') || inputs.build-args }}
         context: .
         no-cache: ${{ inputs.no-cache && 'true' || 'false' }}
         # NOTE: Build for arm and x86 architecture with 64 bit.
@@ -86,7 +86,8 @@ runs:
             inputs.architecture == 'x86-64' &&
             'linux/amd64'
           }}
-        pull: true
-        push: true
         tags: ${{ inputs.tags || steps.meta.outputs.tags }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
+
+        pull: true
+        push: true
