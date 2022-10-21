@@ -86,6 +86,7 @@ runs:
             inputs.architecture == 'x86-64' &&
             'linux/amd64'
           }}
+        pull: true
         push: true
         tags: ${{ inputs.tags || steps.meta.outputs.tags }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
