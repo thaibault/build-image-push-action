@@ -11,6 +11,10 @@ inputs:
       - x86-64
   build-args:
     description: List of build-time variables.
+  no-cache:
+    description: Do not use cache when building the image.
+    default: false
+    type: boolean
 
   name:
     description: Image name to build.
@@ -19,10 +23,6 @@ inputs:
     description: Image tags to use for registering.
   labels:
     description: Image labels to annotate registered image with.
-
-  no-cache:
-    description: Do not use cache when building the image.
-    default: 'false'
 
   registry:
     description: Registry to use for image upload.
@@ -75,7 +75,7 @@ runs:
       with:
         build-args: ${{ inputs.build-args }}
         context: .
-        no-cache: ${{ inputs.no-cache }}
+        no-cache: ${{ inputs.no-cache && 'true' || 'false' }}
         # NOTE: Build for arm and x86 architecture with 64 bit.
         platforms: |
           ${{
