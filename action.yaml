@@ -10,22 +10,28 @@ inputs:
       - arm-64
       - x86-64
   build-args:
-    description: Build arguments to to use for building image.
+    description: List of build-time variables.
+
+  name:
+    description: Image name to build.
+    required: true
   tags:
     description: Image tags to use for registering.
   labels:
     description: Image labels to annotate registered image with.
-  name:
-    description: Image name to build.
-    required: true
-  password:
-    description: Password to log in to github registry.
-    required: true
+
+  no-cache:
+    description: Do not use cache when building the image.
+    default: 'false'
+
   registry:
     description: Registry to use for image upload.
     required: true
   username:
     description: Login to use for authenticating against registry.
+    required: true
+  password:
+    description: Password to log in to github registry.
     required: true
 
 runs:
@@ -69,6 +75,7 @@ runs:
       with:
         build-args: ${{ inputs.build-args }}
         context: .
+        no-cache: ${{ inputs.no-cache }}
         # NOTE: Build for arm and x86 architecture with 64 bit.
         platforms: |
           ${{
