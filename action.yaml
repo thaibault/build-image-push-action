@@ -81,7 +81,7 @@ runs:
       uses: docker/metadata-action@v4.1.1
       with:
         images: |
-          ${{ inputs.alternate-registry && ${{ inputs.alternate-registry }}/${{inputs.name}} || '' }}
+          ${{ inputs.alternate-registry && ${{ format('{0}/${1}', inputs.alternate-registry, inputs.name) }} || '' }}
           ${{ inputs.registry }}/${{ inputs.name }}
         # NOTE: If not set branch name will be used.
         tags: latest
