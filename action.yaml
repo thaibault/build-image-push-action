@@ -27,6 +27,9 @@ inputs:
   registry:
     description: Registry to use for image upload.
     required: true
+  additional_registry:
+    description: Additional registry to use for image upload.
+    required: false
   username:
     description: Login to use for authenticating against registry.
     required: true
@@ -62,11 +65,24 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
 
+    - if: |
+      inputs.alternate-registry &&
+      inputs.alternate-username &&
+      inputs.alternate-password
+    - name: Log in to the alternate Container registry
+      uses: docker/login-action@v2.1.0
+      with:
+        registry: ${{ inputs.alternate-registry }}
+        username: ${{ inputs.alternate-username }}
+        password: ${{ inputs.alternate-password }}
+
     - name: Extract metadata (tags, labels) for Docker
       id: meta
       uses: docker/metadata-action@v4.1.1
       with:
-        images: ${{ inputs.registry }}/${{ inputs.name }}
+        images: |
+          ${{ inputs.alternate-registry && (inputs.alternate-registry + '/' + inputs.name) || '' }}
+          ${{ inputs.registry }}/${{ inputs.name }}
         # NOTE: If not set branch name will be used.
         tags: latest
 
