@@ -24,17 +24,21 @@ inputs:
   labels:
     description: Image labels to annotate registered image with.
 
+  alternate-registry:
+    description: Alternate registry to use for image upload.
+  alternate-username:
+    description: Login to use for authenticating against alternate registry.
+  alternate-password:
+    description: Password to log in to alternate registry.
+
   registry:
     description: Registry to use for image upload.
     required: true
-  additional_registry:
-    description: Additional registry to use for image upload.
-    required: false
   username:
     description: Login to use for authenticating against registry.
     required: true
   password:
-    description: Password to log in to github registry.
+    description: Password to log in to registry.
     required: true
 
 runs:
