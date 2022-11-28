@@ -66,10 +66,10 @@ runs:
         password: ${{ inputs.password }}
 
     - if: |
-      inputs.alternate-registry &&
-      inputs.alternate-username &&
-      inputs.alternate-password
-    - name: Log in to the alternate Container registry
+        inputs.alternate-registry &&
+        inputs.alternate-username &&
+        inputs.alternate-password
+      name: Log in to the alternate Container registry
       uses: docker/login-action@v2.1.0
       with:
         registry: ${{ inputs.alternate-registry }}
