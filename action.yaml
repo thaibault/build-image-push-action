@@ -77,7 +77,7 @@ runs:
       name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2.2.1
 
-    - uses: actions/checkout@v3.1.0
+    - uses: actions/checkout@v3.3.0
 
     - name: Log in to the Container registry
       uses: docker/login-action@v2.1.0
@@ -99,16 +99,28 @@ runs:
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta
-      uses: docker/metadata-action@v4.1.1
+      uses: docker/metadata-action@v4.3.0
       with:
         images: |
-          ${{ inputs.alternate-registry && inputs.alternate-username && format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-username, inputs.name) || '' }}
+          ${{
+            inputs.alternate-registry &&
+            inputs.alternate-username &&
+            format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-username, inputs.name) ||
+            ''
+          }}
           ${{ inputs.registry }}/${{ inputs.username }}/${{ inputs.name }}
         # NOTE: If not set branch name will be used.
         tags: latest
 
+    - name: TODO
+      shell: bash
+      run: |
+        echo ${{ steps.derive_tags.outputs.names }}
+        echo ---------------------------------------------
+        echo ${{ steps.meta.outputs.tags }}
+
     - name: Build for ${{ inputs.architecture }} architecture and push image
-      uses: docker/build-push-action@v3.2.0
+      uses: docker/build-push-action@v3.3.0
       with:
         build-args: ${{ inputs.build-args }}
         context: .
