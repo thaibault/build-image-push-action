@@ -103,7 +103,7 @@ runs:
       id: resolved_tags
       if: inputs.tags.contains('CURRENT_BRANCH_NAME')
       shell: bash
-      run: 'name="${{ inputs.tags }}"; echo JAU $name; echo "name=${name/CURRENT_BRANCH_NAME/${{ steps.extract_branch.outputs.name }}}" >> $GITHUB_OUTPUT'
+      run: 'name="${{ inputs.tags }}"; echo JAU $name; echo "name=${name//CURRENT_BRANCH_NAME/${{ steps.extract_branch.outputs.name }}}" >> $GITHUB_OUTPUT'
 
     - name: TODO Print determined branch name and tag
       shell: bash
