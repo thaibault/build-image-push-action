@@ -43,6 +43,7 @@ inputs:
 
 runs:
   using: composite
+
   steps:
     - if: |
         inputs.architecture == 'all' ||
@@ -90,10 +91,24 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
+    - name: Extract current branch name
+      id: extract_branch
+      shell: bash
+      run: "##[set-output name=name;]${GITHUB_REF#refs/heads/}"
+    - name: Set resolved tag by given branch name.
+      id: resolve_tag
+      if: inputs.tags == 'CURRENT_BRANCH_NAME'
+      run: "##[set-output name=name;]${{ steps.extract_branch.outputs.name }}"
+      shell: bash
+
+    - name: Print determined branch name and tag
+      shell: bash
+      run: echo ${{ steps.extract_branch.outputs.name }} and ${{ steps.resolve_tag.outputs.name }}
+
     - name: Build for ${{ inputs.architecture }} architecture and push image
       uses: docker/build-push-action@v3.2.0
       with:
-        build-args: ${{ startsWith(inputs.build-args, '[') && join(fromJSON(inputs.build-args), ' ') || inputs.build-args }}
+        build-args: ${{ inputs.build-args }}
         context: .
         no-cache: ${{ inputs.no-cache && 'true' || 'false' }}
         # NOTE: Build for arm and x86 architecture with 64 bit.
@@ -106,7 +121,10 @@ runs:
             inputs.architecture == 'x86-64' &&
             'linux/amd64'
           }}
-        tags: ${{ inputs.tags || steps.meta.outputs.tags }}
+        tags: |
+          steps.resolve_tag.outputs.name ||
+          inputs.tags ||
+          steps.meta.outputs.tags
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
 
         pull: true
