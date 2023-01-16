@@ -101,7 +101,7 @@ runs:
       run: echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
     - name: Set resolved tag by given branch name.
       id: resolved_tags
-      if: inputs.tags.contains('CURRENT_BRANCH_NAME')
+      if: contains(inputs.tags, 'CURRENT_BRANCH_NAME')
       shell: bash
       run: 'name="${{ inputs.tags }}"; echo JAU $name; echo "name=${name//CURRENT_BRANCH_NAME/${{ steps.extract_branch.outputs.name }}}" >> $GITHUB_OUTPUT'
 
