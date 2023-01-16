@@ -71,7 +71,7 @@ runs:
           tags="${tags//master/latest}"
 
           for name in ${{ inputs.tags }}; do
-            echo ${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
+            echo "${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
           done
         fi
         echo EOM >> $GITHUB_OUTPUT
