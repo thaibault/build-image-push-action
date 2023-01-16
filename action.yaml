@@ -60,9 +60,9 @@ runs:
       run: |
         echo 'names<<EOM' >> $GITHUB_OUTPUT
         if [ "${{ inputs.tags }}" = '' ]; then
-          echo ${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          echo "${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           if [ "${{ steps.registry.outputs.alternate_url }} " != '' ]; then
-            echo ${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+            echo "${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           fi
         else
           tags="${{ inputs.tags }}"
