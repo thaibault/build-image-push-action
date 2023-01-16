@@ -115,11 +115,16 @@ runs:
           tags="${tags//CURRENT_TAG_OR_BRANCH/${GITHUB_REF_NAME}}"
           tags="${tags//main/latest}"
           tags="${tags//master/latest}"
+          included_tags=''
 
           for name in "${tags[@]}"; do
-            echo "${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
-            if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
-              echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
+            tag="${{ steps.registry.outputs.url }}:${name}"
+            if [[ "$included_tags" != *"$tag"* ]]; then
+              echo "$tag" >> $GITHUB_OUTPUT
+              if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
+                echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
+              fi
+              included_tags+=" $tag"
             fi
           done
         fi
