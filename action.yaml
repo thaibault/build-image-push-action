@@ -61,7 +61,7 @@ runs:
         echo 'names<<EOM' >> $GITHUB_OUTPUT
         if [ "${{ inputs.tags }}" = '' ]; then
           echo "${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          if [[ "${{ steps.registry.outputs.alternate_url }} " != '' ]]; then
+          if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
             echo "${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           fi
         else
@@ -72,7 +72,7 @@ runs:
 
           for name in ${{ inputs.tags }}; do
             echo "${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
-            if [[ "${{ steps.registry.outputs.alternate_url }} " != '' ]]; then
+            if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
               echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
             fi
           done
