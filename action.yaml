@@ -65,7 +65,7 @@ runs:
             echo "${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
           fi
         else
-          tags="${{ inputs.tags }}"
+          tags=(${{ inputs.tags }})
           tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
           tags="${tags//main/latest}"
           tags="${tags//master/latest}"
@@ -82,7 +82,8 @@ runs:
     - name: TODO Print determined branch name and tag
       shell: bash
       run: |
-        for name in ${{ steps.derive_tags.outputs.names }}; do
+        names=(${{ steps.derive_tags.outputs.names }})
+        for name in "${names[@]}"; do
           echo DERIVED TAG ${name}
         done
 
