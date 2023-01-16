@@ -112,7 +112,7 @@ runs:
           fi
         else
           tags=(${{ inputs.tags }})
-          tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
+          tags="${tags//CURRENT_TAG_OR_BRANCH/${GITHUB_REF_NAME}}"
           tags="${tags//main/latest}"
           tags="${tags//master/latest}"
 
