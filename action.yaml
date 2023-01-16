@@ -33,7 +33,7 @@ inputs:
   ownername:
     description: Repository owner name. If not set use provided user names instead.
   password:
-    description: Password to log in to registry.
+    description: Password to log into registry.
     required: true
 
   alternate-registry:
@@ -43,7 +43,7 @@ inputs:
   alternate-ownername:
     description: Repository owner name. If not set use provided user names instead.
   alternate-password:
-    description: Password to log in to alternate registry. If not set use main password.
+    description: Password to log into alternate registry. If not set use main password.
 
 runs:
   using: composite
@@ -75,7 +75,7 @@ runs:
 
     - uses: actions/checkout@v3.3.0
 
-    - name: Log in to the Container registry
+    - name: Log into the Container registry
       uses: docker/login-action@v2.1.0
       with:
         registry: ${{ inputs.registry }}
@@ -83,7 +83,7 @@ runs:
         password: ${{ inputs.password }}
 
     - if: inputs.alternate-registry
-      name: Log in to the alternate Container registry
+      name: Log into the alternate Container registry
       uses: docker/login-action@v2.1.0
       with:
         registry: ${{ inputs.alternate-registry }}
