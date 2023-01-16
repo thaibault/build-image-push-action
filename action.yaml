@@ -58,18 +58,27 @@ runs:
       id: derive_tags
       shell: bash
       run: |
-        tags="${GITHUB_REF_NAME}"
-        [ "${{ inputs.tags }}" = '' ] || tags="${{ inputs.tags }}"
-        tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
-        tags="${tags//main/latest}"
-        tags="${tags//master/latest}"
-        echo "names=${tags}" >> $GITHUB_OUTPUT
+        echo 'names<<EOM' >> $GITHUB_OUTPUT
+        if [ "${{ inputs.tags }}" = '' ]; then
+          echo ${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          if [ "${{ steps.registry.outputs.alternate_url }} " != '' ]; then
+            echo ${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+        else
+          tags="${{ inputs.tags }}"
+          tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
+          tags="${tags//main/latest}"
+          tags="${tags//master/latest}"
+
+          for name in ${{ inputs.tags }}; do
+            echo ${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
+          done
+        fi
+        echo EOM >> $GITHUB_OUTPUT
 
     - name: TODO Print determined branch name and tag
       shell: bash
       run: |
-        echo URLS ${{ steps.registry.outputs.url }}
-        echo ALTERNATE URLS ${{ steps.registry.outputs.alternate_url }}
         echo DERIVED TAGS ${{ steps.derive_tags.outputs.names }}
 
     - if: |
