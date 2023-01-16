@@ -91,6 +91,10 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
+    - name: TODO Print
+      shell: bash
+      run: echo ${GITHUB_REF} and ${GITHUB_HEAD_REF}
+
     - name: Extract current branch name
       id: extract_branch
       shell: bash
@@ -101,7 +105,7 @@ runs:
       run: "##[set-output name=name;]${{ steps.extract_branch.outputs.name }}"
       shell: bash
 
-    - name: Print determined branch name and tag
+    - name: TODO Print determined branch name and tag
       shell: bash
       run: echo ${{ steps.extract_branch.outputs.name }} and ${{ steps.resolve_tag.outputs.name }}
 
