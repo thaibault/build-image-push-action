@@ -45,6 +45,15 @@ runs:
   using: composite
 
   steps:
+    - name: Determine image registry urls.
+      id: registry
+      shell: bash
+      run: |
+        echo "url=${{ inputs.registry }}/${{ inputs.username }}/${{ inputs.name }}" >> $GITHUB_OUTPUT
+        [[ "${{ inputs.alternate-registry }}" != '' ]] && \
+        [[ "${{ inputs.alternate-username }}" ]] && \
+        echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-username, inputs.name) }}" >> $GITHUB_OUTPUT
+
     - name: Set resolved tag by given branch name.
       id: derive_tags
       shell: bash
@@ -59,6 +68,8 @@ runs:
     - name: TODO Print determined branch name and tag
       shell: bash
       run: |
+        echo URLS ${{ steps.registry.outputs.url }}
+        echo ALTERNATE URLS ${{ steps.registry.outputs.alternate_url }}
         echo DERIVED TAGS ${{ steps.derive_tags.outputs.names }}
 
     - if: |
@@ -102,13 +113,8 @@ runs:
       uses: docker/metadata-action@v4.3.0
       with:
         images: |
-          ${{
-            inputs.alternate-registry &&
-            inputs.alternate-username &&
-            format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-username, inputs.name) ||
-            ''
-          }}
-          ${{ inputs.registry }}/${{ inputs.username }}/${{ inputs.name }}
+          ${{ steps.registry.outputs.url }}
+          ${{ steps.registry.outputs.alternate_url }}
         # NOTE: If not set branch name will be used.
         tags: latest
 
