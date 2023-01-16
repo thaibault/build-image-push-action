@@ -40,7 +40,7 @@ inputs:
     description: Alternate registry to use for image upload.
   alternate-username:
     description: Login to use for authenticating against alternate registry. If not set use mail username.
-  ownername:
+  alternate-ownername:
     description: Repository owner name. If not set use provided user names instead.
   alternate-password:
     description: Password to log in to alternate registry. If not set use main password.
