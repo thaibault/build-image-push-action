@@ -70,7 +70,7 @@ runs:
           tags="${tags//main/latest}"
           tags="${tags//master/latest}"
 
-          for name in ${{ inputs.tags }}; do
+          for name in ${{ tags }}; do
             echo "${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
             if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
               echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
@@ -82,7 +82,9 @@ runs:
     - name: TODO Print determined branch name and tag
       shell: bash
       run: |
-        echo DERIVED TAGS ${{ steps.derive_tags.outputs.names }}
+        for name in ${{ steps.derive_tags.outputs.names }}; do
+          echo DERIVED TAG ${name}
+        done
 
     - if: |
         inputs.architecture == 'all' ||
