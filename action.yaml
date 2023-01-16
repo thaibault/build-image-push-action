@@ -45,6 +45,22 @@ runs:
   using: composite
 
   steps:
+    - name: Set resolved tag by given branch name.
+      id: derive_tags
+      shell: bash
+      run: |
+        tags="${GITHUB_REF_NAME}"
+        [ "${{ inputs.tags }}" = '' ] || tags="${{ inputs.tags }}"
+        tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
+        tags="${tags//main/latest}"
+        tags="${tags//master/latest}"
+        echo "names=${tags}" >> $GITHUB_OUTPUT
+
+    - name: TODO Print determined branch name and tag
+      shell: bash
+      run: |
+        echo DERIVED TAGS ${{ steps.derive_tags.outputs.names }}
+
     - if: |
         inputs.architecture == 'all' ||
         inputs.architecture == 'arm-64' &&
@@ -91,24 +107,6 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - name: TODO Print
-      shell: bash
-      run: echo ${GITHUB_REF} and ${GITHUB_HEAD_REF}
-
-    - name: Extract current branch name
-      id: extract_branch
-      shell: bash
-      run: echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
-    - name: Set resolved tag by given branch name.
-      id: resolved_tags
-      if: contains(inputs.tags, 'CURRENT_BRANCH_NAME')
-      shell: bash
-      run: 'name="${{ inputs.tags }}"; echo JAU $name; echo "name=${name//CURRENT_BRANCH_NAME/${{ steps.extract_branch.outputs.name }}}" >> $GITHUB_OUTPUT'
-
-    - name: TODO Print determined branch name and tag
-      shell: bash
-      run: echo ${{ steps.extract_branch.outputs.name }} and ${{ steps.resolve_tag.outputs.name }}
-
     - name: Build for ${{ inputs.architecture }} architecture and push image
       uses: docker/build-push-action@v3.2.0
       with:
@@ -125,12 +123,7 @@ runs:
             inputs.architecture == 'x86-64' &&
             'linux/amd64'
           }}
-        tags: |
-          ${{
-            steps.resolve_tag.outputs.name ||
-            inputs.tags ||
-            steps.meta.outputs.tags
-          }}
+        tags: ${{ steps.derive_tags.outputs.names || steps.meta.outputs.tags }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
 
         pull: true
