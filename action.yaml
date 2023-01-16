@@ -24,22 +24,26 @@ inputs:
   labels:
     description: Image labels to annotate registered image with.
 
-  alternate-registry:
-    description: Alternate registry to use for image upload.
-  alternate-username:
-    description: Login to use for authenticating against alternate registry.
-  alternate-password:
-    description: Password to log in to alternate registry.
-
   registry:
     description: Registry to use for image upload.
     required: true
   username:
     description: Login to use for authenticating against registry.
     required: true
+  ownername:
+    description: Repository owner name. If not set use provided user names instead.
   password:
     description: Password to log in to registry.
     required: true
+
+  alternate-registry:
+    description: Alternate registry to use for image upload.
+  alternate-username:
+    description: Login to use for authenticating against alternate registry. If not set use mail username.
+  ownername:
+    description: Repository owner name. If not set use provided user names instead.
+  alternate-password:
+    description: Password to log in to alternate registry. If not set use main password.
 
 runs:
   using: composite
@@ -49,10 +53,9 @@ runs:
       id: registry
       shell: bash
       run: |
-        echo "url=${{ inputs.registry }}/${{ inputs.username }}/${{ inputs.name }}" >> $GITHUB_OUTPUT
+        echo "url=${{ inputs.registry }}/${{ inputs.ownername || inputs.username }}/${{ inputs.name }}" >> $GITHUB_OUTPUT
         [[ "${{ inputs.alternate-registry }}" != '' ]] && \
-        [[ "${{ inputs.alternate-username }}" ]] && \
-        echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-username, inputs.name) }}" >> $GITHUB_OUTPUT
+        echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-ownername || inputs.alternate-username || inputs.ownername || inputs.username, inputs.name) }}" >> $GITHUB_OUTPUT
 
     - if: |
         inputs.architecture == 'all' ||
@@ -79,16 +82,13 @@ runs:
         username: ${{ inputs.username }}
         password: ${{ inputs.password }}
 
-    - if: |
-        inputs.alternate-registry &&
-        inputs.alternate-username &&
-        inputs.alternate-password
+    - if: inputs.alternate-registry
       name: Log in to the alternate Container registry
       uses: docker/login-action@v2.1.0
       with:
         registry: ${{ inputs.alternate-registry }}
-        username: ${{ inputs.alternate-username }}
-        password: ${{ inputs.alternate-password }}
+        username: ${{ inputs.alternate-username || inputs.username }}
+        password: ${{ inputs.alternate-password || inputs.password }}
 
     - name: Extract metadata (tags, labels) for Docker
       id: meta
