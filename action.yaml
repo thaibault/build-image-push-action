@@ -122,9 +122,11 @@ runs:
             'linux/amd64'
           }}
         tags: |
-          steps.resolve_tag.outputs.name ||
-          inputs.tags ||
-          steps.meta.outputs.tags
+          ${{
+            steps.resolve_tag.outputs.name ||
+            inputs.tags ||
+            steps.meta.outputs.tags
+          }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
 
         pull: true
