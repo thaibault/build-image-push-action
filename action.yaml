@@ -98,11 +98,11 @@ runs:
     - name: Extract current branch name
       id: extract_branch
       shell: bash
-      run: "##[set-output name=name;]${GITHUB_REF#refs/heads/}"
+      run: echo "name=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
     - name: Set resolved tag by given branch name.
       id: resolve_tag
       if: inputs.tags == 'CURRENT_BRANCH_NAME'
-      run: "##[set-output name=name;]${{ steps.extract_branch.outputs.name }}"
+      run: echo "name=${{ GITHUB_REF#refs/heads/ }}" >> $GITHUB_OUTPUT
       shell: bash
 
     - name: TODO Print determined branch name and tag
