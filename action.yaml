@@ -54,39 +54,6 @@ runs:
         [[ "${{ inputs.alternate-username }}" ]] && \
         echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-username, inputs.name) }}" >> $GITHUB_OUTPUT
 
-    - name: Set resolved tag by given branch name.
-      id: derive_tags
-      shell: bash
-      run: |
-        echo 'names<<EOM' >> $GITHUB_OUTPUT
-        if [ "${{ inputs.tags }}" = '' ]; then
-          echo "${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
-            echo "${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          fi
-        else
-          tags=(${{ inputs.tags }})
-          tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
-          tags="${tags//main/latest}"
-          tags="${tags//master/latest}"
-
-          for name in "${tags[@]}"; do
-            echo "${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
-            if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
-              echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
-            fi
-          done
-        fi
-        echo EOM >> $GITHUB_OUTPUT
-
-    - name: TODO Print determined branch name and tag
-      shell: bash
-      run: |
-        names=(${{ steps.derive_tags.outputs.names }})
-        for name in "${names[@]}"; do
-          echo DERIVED TAG ${name}
-        done
-
     - if: |
         inputs.architecture == 'all' ||
         inputs.architecture == 'arm-64' &&
@@ -133,12 +100,30 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - name: TODO
+    - name: Set resolved tag by given branch name.
+      id: derive_tags
       shell: bash
       run: |
-        echo ${{ steps.derive_tags.outputs.names }}
-        echo ---------------------------------------------
-        echo ${{ steps.meta.outputs.tags }}
+        echo 'names<<EOM' >> $GITHUB_OUTPUT
+        if [ "${{ inputs.tags }}" = '' ]; then
+          echo "${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
+            echo "${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          fi
+        else
+          tags=(${{ inputs.tags }})
+          tags="${tags//CURRENT_BRANCH_NAME/${GITHUB_REF_NAME}}"
+          tags="${tags//main/latest}"
+          tags="${tags//master/latest}"
+
+          for name in "${tags[@]}"; do
+            echo "${{ steps.registry.outputs.url }}:${name}" >> $GITHUB_OUTPUT
+            if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
+              echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
+            fi
+          done
+        fi
+        echo EOM >> $GITHUB_OUTPUT
 
     - name: Build for ${{ inputs.architecture }} architecture and push image
       uses: docker/build-push-action@v3.3.0
