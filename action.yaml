@@ -54,8 +54,9 @@ runs:
       shell: bash
       run: |
         echo "url=${{ inputs.registry }}/${{ inputs.ownername || inputs.username }}/${{ inputs.name }}" >> $GITHUB_OUTPUT
-        [[ "${{ inputs.alternate-registry }}" != '' ]] && \
-        echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-ownername || inputs.alternate-username || inputs.ownername || inputs.username, inputs.name) }}" >> $GITHUB_OUTPUT
+        if [[ "${{ inputs.alternate-registry }}" != '' ]]; then
+          echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-ownername || inputs.alternate-username || inputs.ownername || inputs.username, inputs.name) }}" >> $GITHUB_OUTPUT
+        fi
 
     - if: |
         inputs.architecture == 'all' ||
