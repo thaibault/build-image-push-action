@@ -49,6 +49,8 @@ runs:
   using: composite
 
   steps:
+    - uses: actions/checkout@v3.3.0
+
     - name: Determine image registry urls.
       id: registry
       shell: bash
@@ -68,8 +70,6 @@ runs:
 
     - name: Set up Docker Buildx
       uses: docker/setup-buildx-action@v2.2.1
-
-    - uses: actions/checkout@v3.3.0
 
     - name: Log into the Container registry
       uses: docker/login-action@v2.1.0
@@ -95,6 +95,13 @@ runs:
           ${{ steps.registry.outputs.alternate_url }}
         # NOTE: If not set branch name will be used.
         tags: latest
+
+    - name: Prepare container cache layers
+       uses: actions/cache@v3.2.3
+       with:
+         path: /tmp/.buildx-cache
+         key: ${{ runner.os }}-single-buildx-${{ github.sha }}
+         restore-keys: ${{ runner.os }}-single-buildx
 
     - name: Set resolved tag by given branch name.
       id: derive_tags
