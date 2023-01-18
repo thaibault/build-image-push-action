@@ -97,11 +97,11 @@ runs:
         tags: latest
 
     - name: Prepare container cache layers
-       uses: actions/cache@v3.2.3
-       with:
-         path: /tmp/.buildx-cache
-         key: ${{ runner.os }}-single-buildx-${{ github.sha }}
-         restore-keys: ${{ runner.os }}-single-buildx
+      uses: actions/cache@v3.2.3
+      with:
+        path: /tmp/.buildx-cache
+        key: ${{ runner.os }}-single-buildx-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-single-buildx
 
     - name: Set resolved tag by given branch name.
       id: derive_tags
