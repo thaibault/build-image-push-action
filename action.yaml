@@ -141,7 +141,7 @@ runs:
 
         cache-from: type=local,src=/tmp/.buildx-cache
         cache-to: type=local,dest=/tmp/.buildx-cache-new
-        no-cache: ${{ inputs.no-cache && 'true' || 'false' }}
+        no-cache: ${{ inputs.no-cache }}
 
         # NOTE: Build for arm and x86 architecture with 64 bit.
         platforms: |
