@@ -99,9 +99,9 @@ runs:
     - name: Prepare container cache layers
       uses: actions/cache@v3.2.3
       with:
-        path: /tmp/.buildx-cache
-        key: ${{ runner.os }}-single-buildx-${{ github.sha }}
-        restore-keys: ${{ runner.os }}-single-buildx
+        path: /tmp/buildx-layer-cache
+        key: ${{ runner.os }}-buildx-layer-${{ github.sha }}
+        restore-keys: ${{ runner.os }}-buildx-layer
 
     - name: Set resolved tag by given branch name.
       id: derive_tags
@@ -139,8 +139,8 @@ runs:
         build-args: ${{ inputs.build-args }}
         context: .
 
-        cache-from: type=local,src=/tmp/.buildx-cache
-        cache-to: type=local,dest=/tmp/.buildx-cache-new
+        cache-from: type=local,src=/tmp/buildx-layer-cache
+        cache-to: type=local,dest=/tmp/buildx-layer-cache-new
         no-cache: ${{ inputs.no-cache }}
 
         # NOTE: Build for arm and x86 architecture with 64 bit.
@@ -168,5 +168,5 @@ runs:
     - name: Move cache
       shell: bash
       run: |
-        rm -rf /tmp/.buildx-cache
-        mv /tmp/.buildx-cache-new /tmp/.buildx-cache
+        rm -rf /tmp/buildx-layer-cache
+        mv /tmp/buildx-layer-cache-new /tmp/buildx-layer-cache
