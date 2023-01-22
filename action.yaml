@@ -100,7 +100,7 @@ runs:
       uses: actions/cache@v3.2.3
       with:
         path: /tmp/buildx-layer-cache
-        key: ${{ runner.os }}-buildx-layer-${{ github.sha }}
+        key: ${{ runner.os }}-buildx-layer
         restore-keys: ${{ runner.os }}-buildx-layer
 
     - name: Set resolved tag by given branch name.
