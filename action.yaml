@@ -11,10 +11,16 @@ inputs:
       - x86-64
   build-args:
     description: List of build-time variables.
+
+  cache-key:
+    description: An explicit key for restoring and saving the cache. Refer creating a cache key.
+    default: buildx-layer
+  cache-restore-keys:
+    description: An ordered list of prefix-matched keys to use for restoring stale cache if no cache hit occurred for key.
+    default: buildx-layer
   no-cache:
     description: Do not use cache when building the image.
     default: false
-    type: boolean
 
   name:
     description: Image name to build.
@@ -100,8 +106,8 @@ runs:
       uses: actions/cache@v3.2.3
       with:
         path: /tmp/buildx-layer-cache
-        key: ${{ runner.os }}-buildx-layer
-        restore-keys: ${{ runner.os }}-buildx-layer
+        key: ${{ inputs.cache-key }}
+        restore-keys: ${{ inputs.cache-restore-keys }}
 
     - name: Set resolved tag by given branch name.
       id: derive_tags
