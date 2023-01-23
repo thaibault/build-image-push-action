@@ -148,13 +148,13 @@ runs:
 
         cache-from: |
           ${{
-            !inputs.no-cache &&
+            (!inputs.no-cache) &&
             'type=local,src=/tmp/buildx-layer-cache' ||
             ''
           }}
         cache-to: |
           ${{
-            !inputs.no-cache &&
+            (!inputs.no-cache) &&
             'type=local,dest=/tmp/buildx-layer-cache-new' ||
             ''
           }}
