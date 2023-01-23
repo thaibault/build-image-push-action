@@ -102,15 +102,7 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - name: TODO
-      shell: bash
-      run: |
-        echo ${{ inputs.use-cache == 'true' && 'YES' || 'NO' }}
-        echo ${{ inputs.use-cache == 'true' }}
-        echo ${{ inputs.use-cache == 'true' && 'YES' || 'NO' }}
-        echo ${{ inputs.use-cache == 'false' && 'NO' || 'YES' }}
-        echo ${{ contains(inputs.use-cache, 'true') && 'YES' || 'NO' }}
-    - if: inputs.use-cache
+    - if: contains(inputs.use-cache, 'true')
       name: Prepare container cache layers
       uses: actions/cache@v3.2.3
       with:
@@ -156,15 +148,17 @@ runs:
 
         cache-from: |
           ${{
-            inputs.use-cache && 'type=local,src=/tmp/buildx-layer-cache' || ''
+            contains(inputs.use-cache, 'true') &&
+            'type=local,src=/tmp/buildx-layer-cache' ||
+            ''
           }}
         cache-to: |
           ${{
-            inputs.use-cache &&
+            contains(inputs.use-cache, 'true') &&
             'type=local,dest=/tmp/buildx-layer-cache-new' ||
             ''
           }}
-        no-cache: ${{ !inputs.use-cache }}
+        no-cache: !contains(inputs.use-cache, 'true')
 
         # NOTE: Build for arm and x86 architecture with 64 bit.
         platforms: |
@@ -188,7 +182,7 @@ runs:
     # Temp fix
     # https://github.com/docker/build-push-action/issues/252
     # https://github.com/moby/buildkit/issues/1896
-    - if: inputs.use-cache
+    - if: contains(inputs.use-cache, 'true')
       name: Move cache
       shell: bash
       run: |
