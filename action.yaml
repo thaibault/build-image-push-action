@@ -102,7 +102,7 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - if: ! inputs.no-cache
+    - if: inputs.no-cache == false
       name: Prepare container cache layers
       uses: actions/cache@v3.2.3
       with:
