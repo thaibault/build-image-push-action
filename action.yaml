@@ -107,7 +107,7 @@ runs:
       shell: bash
       run: |
         echo ${{ inputs.use-cache && 'YES' || 'NO' }}
-        echo ${{ inputs.use-cache }}
+        echo ${{ inputs.use-cache }
         echo ${{ inputs.use-cache == true && 'YES' || 'NO' }}
         echo ${{ inputs.use-cache == false && 'NO' || 'YES' }}
         echo ${{ contains(inputs.use-cache, 'true') && 'YES' || 'NO' }}
