@@ -21,7 +21,6 @@ inputs:
   use-cache:
     description: Use cache when building the image.
     default: true
-    type: boolean
 
   name:
     description: Image name to build.
@@ -106,10 +105,10 @@ runs:
     - name: TODO
       shell: bash
       run: |
-        echo ${{ inputs.use-cache && 'YES' || 'NO' }}
-        echo ${{ inputs.use-cache }}
-        echo ${{ inputs.use-cache == true && 'YES' || 'NO' }}
-        echo ${{ inputs.use-cache == false && 'NO' || 'YES' }}
+        echo ${{ inputs.use-cache == 'true' && 'YES' || 'NO' }}
+        echo ${{ inputs.use-cache == 'true' }}
+        echo ${{ inputs.use-cache == 'true' && 'YES' || 'NO' }}
+        echo ${{ inputs.use-cache == 'false' && 'NO' || 'YES' }}
         echo ${{ contains(inputs.use-cache, 'true') && 'YES' || 'NO' }}
     - if: inputs.use-cache
       name: Prepare container cache layers
