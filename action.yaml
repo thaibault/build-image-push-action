@@ -102,7 +102,7 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - if: !inputs.no-cache
+    - if: '!inputs.no-cache'
       name: Prepare container cache layers
       uses: actions/cache@v3.2.3
       with:
@@ -182,7 +182,7 @@ runs:
     # Temp fix
     # https://github.com/docker/build-push-action/issues/252
     # https://github.com/moby/buildkit/issues/1896
-    - if: !inputs.no-cache
+    - if: '!inputs.no-cache'
       name: Move cache
       shell: bash
       run: |
