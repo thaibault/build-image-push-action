@@ -13,10 +13,14 @@ inputs:
     description: List of build-time variables.
 
   cache-key:
-    description: An explicit key for restoring and saving the cache. Refer creating a cache key.
+    description: |
+      An explicit key for restoring and saving the cache. Refer creating a
+      cache key.
     default: buildx-layer
   cache-restore-keys:
-    description: An ordered list of prefix-matched keys to use for restoring stale cache if no cache hit occurred for key.
+    description: |
+      An ordered list of prefix-matched keys to use for restoring stale cache
+      if no cache hit occurred for key.
     default: buildx-layer
   use-cache:
     description: Use cache when building the image.
@@ -37,7 +41,8 @@ inputs:
     description: Login to use for authenticating against registry.
     required: true
   ownername:
-    description: Repository owner name. If not set use provided user names instead.
+    description: |
+      Repository owner name. If not set use provided user names instead.
   password:
     description: Password to log into registry.
     required: true
@@ -45,11 +50,15 @@ inputs:
   alternate-registry:
     description: Alternate registry to use for image upload.
   alternate-username:
-    description: Login to use for authenticating against alternate registry. If not set use mail username.
+    description: |
+      Login to use for authenticating against alternate registry. If not set
+      use mail username.
   alternate-ownername:
-    description: Repository owner name. If not set use provided user names instead.
+    description: |
+      Repository owner name. If not set use provided user names instead.
   alternate-password:
-    description: Password to log into alternate registry. If not set use main password.
+    description: |
+      Password to log into alternate registry. If not set use main password.
 
 runs:
   using: composite
@@ -102,7 +111,7 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - if: contains(inputs.use-cache, "true")
+    - if: contains(inputs.use-cache, 'true')
       name: Prepare container cache layers
       uses: actions/cache@v3.2.3
       with:
