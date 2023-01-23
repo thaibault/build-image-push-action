@@ -158,7 +158,7 @@ runs:
             'type=local,dest=/tmp/buildx-layer-cache-new' ||
             ''
           }}
-        no-cache: ${{ !contains(inputs.use-cache, "true") }}
+        no-cache: ${{ !contains(inputs.use-cache, 'true') }}
 
         # NOTE: Build for arm and x86 architecture with 64 bit.
         platforms: |
