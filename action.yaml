@@ -146,14 +146,16 @@ runs:
         build-args: ${{ inputs.build-args }}
         context: .
 
-        cache-from: ${{
-          inputs.no-cache && '' ||
-          'type=local,src=/tmp/buildx-layer-cache'
-        }}
-        cache-to: ${{
-          inputs.no-cache && '' ||
-          'type=local,dest=/tmp/buildx-layer-cache-new'
-        }}
+        cache-from: |
+          ${{
+            inputs.no-cache && '' ||
+            'type=local,src=/tmp/buildx-layer-cache'
+          }}
+        cache-to: |
+          ${{
+            inputs.no-cache && '' ||
+            'type=local,dest=/tmp/buildx-layer-cache-new'
+          }}
         no-cache: ${{ inputs.no-cache }}
 
         # NOTE: Build for arm and x86 architecture with 64 bit.
