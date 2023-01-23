@@ -102,7 +102,8 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
-    - name: Prepare container cache layers
+    - if: !inputs.no-cache
+      name: Prepare container cache layers
       uses: actions/cache@v3.2.3
       with:
         path: /tmp/buildx-layer-cache
