@@ -111,7 +111,7 @@ runs:
         echo ${{ Boolean(inputs.use-cache) }}
         echo ${{ inputs.use-cache == true && 'YES' || 'NO' }}
         echo ${{ inputs.use-cache == false && 'NO' || 'YES' }}
-        echo ${{ contains(inputs.use-cache, 'true') && 'YES' || 'NO' }}
+    # echo ${{ contains(inputs.use-cache, 'true') && 'YES' || 'NO' }}
     - if: inputs.use-cache
       name: Prepare container cache layers
       uses: actions/cache@v3.2.3
