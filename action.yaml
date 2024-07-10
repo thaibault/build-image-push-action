@@ -64,7 +64,7 @@ runs:
   using: composite
 
   steps:
-    - uses: actions/checkout@v4.1.1
+    - uses: actions/checkout@v4.1.7
 
     - name: Determine image registry urls.
       id: registry
@@ -81,13 +81,13 @@ runs:
         (runner.arch == 'X86' || runner.arch == 'X64') ||
         inputs.architecture == 'x86-64' && runner.arch == 'ARM64'
       name: Set up QEMU for emulating arm architecture on x86 or vice versa.
-      uses: docker/setup-qemu-action@v3.0.0
+      uses: docker/setup-qemu-action@v3.1.0
 
     - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v3.0.0
+      uses: docker/setup-buildx-action@v3.4.0
 
     - name: Log into the Container registry
-      uses: docker/login-action@v3.0.0
+      uses: docker/login-action@v3.2.0
       with:
         registry: ${{ inputs.registry }}
         username: ${{ inputs.username }}
@@ -95,7 +95,7 @@ runs:
 
     - if: inputs.alternate-registry
       name: Log into the alternate Container registry
-      uses: docker/login-action@v3.0.0
+      uses: docker/login-action@v3.2.0
       with:
         registry: ${{ inputs.alternate-registry }}
         username: ${{ inputs.alternate-username || inputs.username }}
@@ -113,7 +113,7 @@ runs:
 
     - if: contains(inputs.use-cache, 'true')
       name: Prepare container cache layers
-      uses: actions/cache@v4.0.0
+      uses: actions/cache@v4.0.2
       with:
         path: /tmp/buildx-layer-cache
         key: ${{ inputs.cache-key }}
@@ -150,7 +150,7 @@ runs:
         echo EOM >> $GITHUB_OUTPUT
 
     - name: Build for ${{ inputs.architecture }} architecture and push image
-      uses: docker/build-push-action@v5.1.0
+      uses: docker/build-push-action@v6.3.0
       with:
         build-args: ${{ inputs.build-args }}
         context: .
