@@ -131,11 +131,10 @@ runs:
           fi
         else
           tags=(${{ inputs.tags }})
-          tags="${tags//CURRENT_TAG_OR_BRANCH/${GITHUB_REF_NAME}}"
           tags="${tags//main/latest}"
           tags="${tags//master/latest}"
-          included_tags=''
 
+          included_tags=''
           for name in "${tags[@]}"; do
             tag="${{ steps.registry.outputs.url }}:${name}"
             if [[ "$included_tags" != *"$tag"* ]]; then
