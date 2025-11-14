@@ -71,6 +71,7 @@ runs:
       name: Delete old images
       uses: SmartsquareGmbH/delete-old-packages@v0.8.1
       with:
+        user: ${{ inputs.username }}
         names: ${{ inputs.name }}
         type: container
         dry-run: true
