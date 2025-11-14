@@ -68,10 +68,9 @@ runs:
 
   steps:
     - if: contains(inputs.delete-old-images, 'true')
-      name: Delete old images
-      uses: SmartsquareGmbH/delete-old-packages@v0.8.1
+      uses: actions/delete-package-versions@v5
       with:
-        user: ${{ inputs.username }}
-        names: ${{ inputs.name }}
-        type: container
-        dry-run: true
+        package-name: ${{ inputs.name }}
+        package-type: container
+        min-versions-to-keep: 20
+        delete-only-untagged-versions: true
