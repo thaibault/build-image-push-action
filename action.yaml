@@ -74,3 +74,4 @@ runs:
         package-type: container
         min-versions-to-keep: 20
         delete-only-untagged-versions: true
+        ignore-versions: '^.*(latest|legacy).*$'
