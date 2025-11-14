@@ -22,6 +22,9 @@ inputs:
       An ordered list of prefix-matched keys to use for restoring stale cache
       if no cache hit occurred for key.
     default: buildx-layer
+  delete-old-images:
+    description: Delete old images.
+    default: true
   use-cache:
     description: Use cache when building the image.
     default: true
@@ -196,3 +199,9 @@ runs:
       run: |
         rm -rf /tmp/buildx-layer-cache
         mv /tmp/buildx-layer-cache-new /tmp/buildx-layer-cache
+
+    - if: contains(inputs.delete-old-images, 'true')
+      name: Delete old images
+      uses: SmartsquareGmbH/delete-old-packages@v0.8.1
+      names: ${{ inputs.name }}
+      dry-run: true
