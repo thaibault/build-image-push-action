@@ -203,5 +203,6 @@ runs:
     - if: contains(inputs.delete-old-images, 'true')
       name: Delete old images
       uses: SmartsquareGmbH/delete-old-packages@v0.8.1
-      names: ${{ inputs.name }}
-      dry-run: true
+      with:
+        names: ${{ inputs.name }}
+        dry-run: true
