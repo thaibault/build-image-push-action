@@ -201,14 +201,6 @@ runs:
         mv /tmp/buildx-layer-cache-new /tmp/buildx-layer-cache
 
     - if: contains(inputs.delete-old-images, 'true')
-      name: Delete old images
-      uses: SmartsquareGmbH/delete-old-packages@v0.8.1
-      with:
-        names: ${{ inputs.name }}
-        type: container
-        dry-run: true
-
-    - if: contains(inputs.delete-old-images, 'true')
       uses: actions/delete-package-versions@v5
       with:
         package-name: ${{ inputs.name }}
