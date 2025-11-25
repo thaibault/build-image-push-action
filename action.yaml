@@ -11,6 +11,8 @@ inputs:
       - x86-64
   build-args:
     description: List of build-time variables.
+  build-target:
+    description: Sets the target stage to build.
 
   cache-key:
     description: |
@@ -155,6 +157,7 @@ runs:
       uses: docker/build-push-action@v6
       with:
         build-args: ${{ inputs.build-args }}
+        target: ${{ inputs.build-target }}
         context: .
 
         cache-from: |
