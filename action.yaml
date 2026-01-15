@@ -15,7 +15,7 @@ inputs:
     description: Sets the target stage to build.
   dockerfile-path:
     description: Sets the path to dockerfile to use for building the image.
-    default: '{context}/Dockerfile'
+    default: Dockerfile
 
   cache-key:
     description: |
