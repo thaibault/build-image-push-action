@@ -37,6 +37,8 @@ inputs:
   name:
     description: Image name to build.
     required: true
+  description:
+    description: Image description to annotate with.
   tags:
     description: Image tags to use for registering.
   labels:
@@ -191,6 +193,7 @@ runs:
 
         tags: ${{ steps.derive_tags.outputs.names || steps.meta.outputs.tags }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
+        outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=${{ inputs.description || inputs.labels || steps.meta.outputs.labels }}
 
         pull: true
         push: true
@@ -213,6 +216,6 @@ runs:
       with:
         package-name: ${{ inputs.name }}
         package-type: container
-        min-versions-to-keep: 10
+        min-versions-to-keep: 50
         delete-only-untagged-versions: true
         ignore-versions: '^.*(latest|legacy).*$'
