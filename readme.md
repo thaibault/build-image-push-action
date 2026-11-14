@@ -116,7 +116,7 @@ Inputs
 
 - "name" (required): image name, the last part of the image path.<!--deDE:"name" (erforderlich): Image-Name, der letzte Teil des Image-Pfads.--><!--frFR:"name" (obligatoire): nom de l'image, la dernière partie du chemin de l'image.-->
 - "tags": space separated tags, see [Tags](#tags).<!--deDE:"tags": durch Leerzeichen getrennte Tags, siehe [Tags](#tags).--><!--frFR:"tags": tags séparés par des espaces, voir [Tags](#tags).-->
-- "description": description annotated to the multi-architecture image, which the GitHub package page shows.<!--deDE:"description": Beschreibung, mit der das Multi-Architektur-Image annotiert wird und die die GitHub-Paketseite anzeigt.--><!--frFR:"description": description annotée sur l'image multi-architecture, affichée par la page du paquet GitHub.-->
+- "description": description annotated to the multi-architecture image, which the GitHub package page shows. Defaults to the repository description.<!--deDE:"description": Beschreibung, mit der das Multi-Architektur-Image annotiert wird und die die GitHub-Paketseite anzeigt. Standardmäßig die Beschreibung des Repositorys.--><!--frFR:"description": description annotée sur l'image multi-architecture, affichée par la page du paquet GitHub. Par défaut, la description du dépôt.-->
 - "labels": image labels, one "key=value" per line. Defaults to the OCI labels derived from the repository.<!--deDE:"labels": Image-Labels, ein "key=value" pro Zeile. Standardmäßig die aus dem Repository abgeleiteten OCI-Labels.--><!--frFR:"labels": labels de l'image, un "key=value" par ligne. Par défaut, les labels OCI dérivés du dépôt.-->
 
 <!--|deDE:Bauen-->
@@ -135,7 +135,7 @@ Inputs
 - "use-cache": "true" (default) reuses the layers of former runs, "false" builds everything from scratch.<!--deDE:"use-cache": "true" (Standard) verwendet die Layer früherer Läufe wieder, "false" baut alles von Grund auf.--><!--frFR:"use-cache": "true" (par défaut) réutilise les couches des exécutions précédentes, "false" reconstruit tout depuis le début.-->
 - "cache-key": key the layer cache is saved under, default "buildx-layer".<!--deDE:"cache-key": Schlüssel, unter dem der Layer-Cache gespeichert wird, Standard "buildx-layer".--><!--frFR:"cache-key": clé sous laquelle le cache de couches est enregistré, par défaut "buildx-layer".-->
 - "cache-restore-keys": key prefixes to restore an older cache from if "cache-key" has none, default "buildx-layer".<!--deDE:"cache-restore-keys": Schlüssel-Präfixe, aus denen ein älterer Cache wiederhergestellt wird, wenn es zu "cache-key" keinen gibt, Standard "buildx-layer".--><!--frFR:"cache-restore-keys": préfixes de clé à partir desquels un cache plus ancien est restauré si "cache-key" n'en a pas, par défaut "buildx-layer".-->
-- "delete-old-images": "true" (default) deletes untagged versions of the image on GitHub, see [Cleanup](#cleanup).<!--deDE:"delete-old-images": "true" (Standard) löscht ungetaggte Versionen des Images auf GitHub, siehe [Aufräumen](#cleanup).--><!--frFR:"delete-old-images": "true" (par défaut) supprime les versions sans tag de l'image sur GitHub, voir [Nettoyage](#cleanup).-->
+- "delete-old-images": "true" (default) deletes untagged images on "ghcr.io", see [Cleanup](#cleanup).<!--deDE:"delete-old-images": "true" (Standard) löscht ungetaggte Images auf "ghcr.io", siehe [Aufräumen](#cleanup).--><!--frFR:"delete-old-images": "true" (par défaut) supprime les images sans tag sur "ghcr.io", voir [Nettoyage](#cleanup).-->
 
 <!--|deDE:Registry-->
 <!--|frFR:Registre-->
@@ -258,19 +258,23 @@ reused.
 <!--|frFR:Nettoyage-->
 ### Cleanup
 
-Rebuilding a tag leaves the image version it replaces behind without a tag.
-After the build the action deletes such untagged versions of the GitHub
-package "name", keeping the 50 most recent ones. Images in other registries
-are not touched.
+Rebuilding a tag leaves the image it replaces behind without a tag. If the
+main registry is "ghcr.io", the action deletes such untagged images of the
+package "name" after the build and keeps the 50 most recent ones. The
+architecture specific parts of the images which are still tagged are kept.
+Images in other registries are not touched.
 <!--deDE:
-    Ein erneuter Bau eines Tags hinterlässt die ersetzte Image-Version ohne
-    Tag. Nach dem Bau löscht die Action solche ungetaggten Versionen des
-    GitHub-Pakets "name" und behält die 50 neuesten. Images in anderen
-    Registrys bleiben unberührt.
+    Ein erneuter Bau eines Tags hinterlässt das ersetzte Image ohne Tag. Ist
+    die Haupt-Registry "ghcr.io", löscht die Action nach dem Bau solche
+    ungetaggten Images des Pakets "name" und behält die 50 neuesten. Die
+    architekturspezifischen Teile der weiterhin getaggten Images bleiben
+    erhalten. Images in anderen Registrys bleiben unberührt.
 -->
 <!--frFR:
-    Une nouvelle construction d'un tag laisse la version d'image qu'elle
-    remplace sans tag. Après la construction, l'action supprime ces versions
-    sans tag du paquet GitHub "name" en conservant les 50 plus récentes. Les
-    images des autres registres ne sont pas touchées.
+    Une nouvelle construction d'un tag laisse l'image qu'elle remplace sans
+    tag. Si le registre principal est "ghcr.io", l'action supprime après la
+    construction ces images sans tag du paquet "name" et conserve les 50
+    plus récentes. Les parties spécifiques à une architecture des images qui
+    ont encore un tag sont conservées. Les images des autres registres ne
+    sont pas touchées.
 -->

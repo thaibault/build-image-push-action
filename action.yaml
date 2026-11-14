@@ -1,14 +1,10 @@
-name: Build x86-64 or arm-64 images pushes
+name: Build and push x86-64 and arm-64 container images
 
 inputs:
   architecture:
     default: all
-    description: Architecture name to build for.
-    type: choice
-    options:
-      - all
-      - arm-64
-      - x86-64
+    description: |
+      Architecture name to build for: "all", "arm-64" or "x86-64".
   build-args:
     description: List of build-time variables.
   build-target:
@@ -62,7 +58,7 @@ inputs:
   alternate-username:
     description: |
       Login to use for authenticating against alternate registry. If not set
-      use mail username.
+      use main username.
   alternate-ownername:
     description: |
       Repository owner name. If not set use provided user names instead.
@@ -74,7 +70,7 @@ runs:
   using: composite
 
   steps:
-    - uses: actions/checkout@main
+    - uses: actions/checkout@v7
 
     - name: Determine image registry urls.
       id: registry
@@ -132,31 +128,38 @@ runs:
     - name: Set resolved tag by given branch name.
       id: derive_tags
       shell: bash
+      env:
+        ALTERNATE_URL: ${{ steps.registry.outputs.alternate_url }}
+        TAGS: ${{ inputs.tags }}
+        URL: ${{ steps.registry.outputs.url }}
       run: |
-        echo 'names<<EOM' >> $GITHUB_OUTPUT
-        if [ "${{ inputs.tags }}" = '' ]; then
-          echo "${{ steps.registry.outputs.url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
-            echo "${{ steps.registry.outputs.alternate_url }}:${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
-          fi
+        names=()
+        if [[ "$TAGS" == '' ]]; then
+          names=("$GITHUB_REF_NAME")
         else
-          tags=(${{ inputs.tags }})
-          tags="${tags//main/latest}"
-          tags="${tags//master/latest}"
-
-          included_tags=''
+          read -r -d '' -a tags <<< "$TAGS" || true
           for name in "${tags[@]}"; do
-            tag="${{ steps.registry.outputs.url }}:${name}"
-            if [[ "$included_tags" != *"$tag"* ]]; then
-              echo "$tag" >> $GITHUB_OUTPUT
-              if [[ "${{ steps.registry.outputs.alternate_url }}" != '' ]]; then
-                echo "${{ steps.registry.outputs.alternate_url }}:${name}" >> $GITHUB_OUTPUT
-              fi
-              included_tags+=" $tag"
+            if [[ "$name" == main || "$name" == master ]]; then
+              name=latest
             fi
+            names+=("$name")
           done
         fi
-        echo EOM >> $GITHUB_OUTPUT
+
+        declare -A included_names=()
+        {
+          echo 'names<<EOM'
+          for name in "${names[@]}"; do
+            if [[ "${included_names[$name]:-}" == '' ]]; then
+              included_names[$name]=true
+              echo "${URL}:${name}"
+              if [[ "$ALTERNATE_URL" != '' ]]; then
+                echo "${ALTERNATE_URL}:${name}"
+              fi
+            fi
+          done
+          echo EOM
+        } >> "$GITHUB_OUTPUT"
 
     - name: Build for ${{ inputs.architecture }} architecture and push image
       uses: docker/build-push-action@v7
@@ -193,7 +196,19 @@ runs:
 
         tags: ${{ steps.derive_tags.outputs.names || steps.meta.outputs.tags }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
-        outputs: type=image,name=target,annotation-index.org.opencontainers.image.description=${{ inputs.description || inputs.labels || steps.meta.outputs.labels }}
+        # NOTE: Annotations are not parsed as comma separated values like
+        # "outputs", so the description may contain commas.
+        annotations: |
+          ${{
+            (
+              inputs.description || github.event.repository.description
+            ) &&
+            format(
+              'index:org.opencontainers.image.description={0}',
+              inputs.description || github.event.repository.description
+            ) ||
+            ''
+          }}
 
         pull: true
         push: true
@@ -210,12 +225,14 @@ runs:
         rm -rf /tmp/buildx-layer-cache
         mv /tmp/buildx-layer-cache-new /tmp/buildx-layer-cache
 
-    - if: contains(inputs.delete-old-images, 'true')
+    # NOTE: GitHub lists the platform images of a multi-architecture image
+    # as untagged versions, so deleting untagged package versions directly
+    # makes older tags unpullable. This action only deletes untagged images
+    # as a whole.
+    - if: contains(inputs.delete-old-images, 'true') && inputs.registry == 'ghcr.io'
       name: Delete deprecated images.
-      uses: actions/delete-package-versions@v5
+      uses: dataaxiom/ghcr-cleanup-action@v1
       with:
-        package-name: ${{ inputs.name }}
-        package-type: container
-        min-versions-to-keep: 50
-        delete-only-untagged-versions: true
-        ignore-versions: '^.*(latest|legacy).*$'
+        owner: ${{ inputs.ownername || inputs.username }}
+        package: ${{ inputs.name }}
+        keep-n-untagged: 50
