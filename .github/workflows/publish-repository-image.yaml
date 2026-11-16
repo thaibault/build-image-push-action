@@ -67,14 +67,20 @@ jobs:
       target-tag: ${{ steps.tags.outputs.target_tag }}
 
     steps:
+      # NOTE: The target tag names a single image to use (e.g. for testing),
+      # so only the first of multiple given tags is taken.
       - name: Determine image tags.
         id: tags
         env:
           TAGS: ${{ inputs.tags || inputs.dockerfile-path == 'Dockerfile.devcontainer' && 'devcontainer' || format('{0} latest', github.event.client_payload.version || github.head_ref || github.ref_name) }}
           TARGET_TAG: ${{ inputs.tags || inputs.dockerfile-path == 'Dockerfile.devcontainer' && 'devcontainer' || 'latest' }}
         run: |
+          read -r target_tag _ <<< "$TARGET_TAG" || true
+          if [[ "$target_tag" == main || "$target_tag" == master ]]; then
+            target_tag=latest
+          fi
           echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
-          echo "target_tag=$TARGET_TAG" >> "$GITHUB_OUTPUT"
+          echo "target_tag=$target_tag" >> "$GITHUB_OUTPUT"
 
   main:
     needs: prepare
