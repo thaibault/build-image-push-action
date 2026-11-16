@@ -1,0 +1,130 @@
+name: Build image and push
+
+# NOTE: Shared image workflow of repositories which only declare their
+# triggers and call this workflow. Builds the "Dockerfile" of the calling
+# repository for every architecture via "build-image-per-architecture.yaml",
+# pushes it to "ghcr.io/<owner>/<repository>" (and optionally a second
+# registry) and notifies the calling repository with an "image-built"
+# repository dispatch.
+on:
+  workflow_call:
+    inputs:
+      architecture:
+        description: |
+          Architecture name to build for: "all", "arm-64" or "x86-64".
+          Defaults to "all".
+        type: string
+      arm-64-runner:
+        default: ubuntu-24.04-arm
+        description: Runner to build the arm-64 image on.
+        type: string
+      x86-64-runner:
+        default: ubuntu-latest
+        description: Runner to build the x86-64 image on.
+        type: string
+      build-args:
+        description: List of additional build-time variables.
+        type: string
+      build-target:
+        description: Sets the target stage to build.
+        type: string
+      dockerfile-path:
+        description: |
+          Sets the path to dockerfile to use for building the image. A
+          "Dockerfile.devcontainer" is tagged as "devcontainer" by default.
+        default: Dockerfile
+        type: string
+
+      tags:
+        description: |
+          Image tags to use for registering. Defaults to the prepared version
+          or the branch or tag name and "latest".
+        type: string
+      use-cache:
+        description: Use cache when building the image (not on schedule).
+        default: false
+        type: boolean
+
+      alternate-registry:
+        description: |
+          Alternate registry to use for image upload. Set to an empty string
+          to only push to "ghcr.io".
+        default: docker.io
+        type: string
+
+    secrets:
+      alternate-username:
+        description: Login to use for authenticating against alternate registry.
+      alternate-password:
+        description: Password to log into alternate registry.
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+      target-tag: ${{ steps.tags.outputs.target_tag }}
+
+    steps:
+      - name: Determine image tags.
+        id: tags
+        env:
+          TAGS: ${{ inputs.tags || inputs.dockerfile-path == 'Dockerfile.devcontainer' && 'devcontainer' || format('{0} latest', github.event.client_payload.version || github.head_ref || github.ref_name) }}
+          TARGET_TAG: ${{ inputs.tags || inputs.dockerfile-path == 'Dockerfile.devcontainer' && 'devcontainer' || 'latest' }}
+        run: |
+          echo "tags=$TAGS" >> "$GITHUB_OUTPUT"
+          echo "target_tag=$TARGET_TAG" >> "$GITHUB_OUTPUT"
+
+  main:
+    needs: prepare
+
+    permissions:
+      contents: read
+      packages: write
+
+    uses: thaibault/build-image-push-action/.github/workflows/build-image-per-architecture.yaml@main
+    with:
+      name: ${{ github.event.repository.name }}
+      tags: ${{ needs.prepare.outputs.tags }}
+      description: ${{ github.event.repository.description || format('Container image for {0}', github.event.repository.name) }}
+
+      architecture: ${{ inputs.architecture || 'all' }}
+      arm-64-runner: ${{ inputs.arm-64-runner }}
+      x86-64-runner: ${{ inputs.x86-64-runner }}
+      build-args: |
+        BRANCH_NAME=${{ github.ref_name || 'main' }}
+        ${{ inputs.build-args }}
+      build-target: ${{ inputs.build-target }}
+      dockerfile-path: ${{ inputs.dockerfile-path || 'Dockerfile' }}
+
+      cache-key: buildx-layer-${{ github.sha }}
+      cache-restore-keys: buildx-layer-
+      use-cache: ${{ inputs.use-cache && github.event_name != 'schedule' }}
+
+      alternate-registry: ${{ inputs.alternate-registry }}
+
+      registry: ghcr.io
+      username: ${{ github.repository_owner }}
+    secrets:
+      password: ${{ secrets.GITHUB_TOKEN }}
+      alternate-username: ${{ secrets.alternate-username }}
+      alternate-password: ${{ secrets.alternate-password }}
+
+  dispatch:
+    needs:
+      - prepare
+      - main
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+
+    steps:
+      - name: Repository Dispatch
+        uses: peter-evans/repository-dispatch@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          event-type: image-built
+          client-payload: '{"architecture": "${{ inputs.architecture }}", "image": "${{ github.event.repository.name }}", "owner": "${{ github.repository_owner }}", "reference": "${{ github.event.repository.name }}:${{ needs.prepare.outputs.tags }}", "registry": "ghcr.io", "tags": "${{ needs.prepare.outputs.tags }}", "inputTags": "${{ inputs.tags }}", "targetTag": "${{ needs.prepare.outputs.target-tag }}"}'

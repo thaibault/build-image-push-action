@@ -1,0 +1,138 @@
+name: Merge architecture specific container images into one tagged image
+
+inputs:
+  digests:
+    description: |
+      Space or newline separated digests of the architecture specific images
+      pushed by digest.
+    required: true
+  delete-old-images:
+    description: Delete old images.
+    default: true
+
+  name:
+    description: Image name to merge.
+    required: true
+  description:
+    description: Image description to annotate with.
+  tags:
+    description: Image tags to use for registering.
+
+  registry:
+    description: Registry to use for image upload.
+    required: true
+  username:
+    description: Login to use for authenticating against registry.
+    required: true
+  ownername:
+    description: |
+      Repository owner name. If not set use provided user names instead.
+  password:
+    description: Password to log into registry.
+    required: true
+
+  alternate-registry:
+    description: Alternate registry to use for image upload.
+  alternate-username:
+    description: |
+      Login to use for authenticating against alternate registry. If not set
+      use main username.
+  alternate-ownername:
+    description: |
+      Repository owner name. If not set use provided user names instead.
+  alternate-password:
+    description: |
+      Password to log into alternate registry. If not set use main password.
+
+runs:
+  using: composite
+
+  steps:
+    - name: Determine image registry urls.
+      id: registry
+      shell: bash
+      run: |
+        echo "url=${{ inputs.registry }}/${{ inputs.ownername || inputs.username }}/${{ inputs.name }}" >> $GITHUB_OUTPUT
+        if [[ "${{ inputs.alternate-registry }}" != '' ]]; then
+          echo "alternate_url=${{ format('{0}/{1}/{2}', inputs.alternate-registry, inputs.alternate-ownername || inputs.alternate-username || inputs.ownername || inputs.username, inputs.name) }}" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Log into the Container registry
+      uses: docker/login-action@v4
+      with:
+        registry: ${{ inputs.registry }}
+        username: ${{ inputs.username }}
+        password: ${{ inputs.password }}
+
+    - if: inputs.alternate-registry
+      name: Log into the alternate Container registry
+      uses: docker/login-action@v4
+      with:
+        registry: ${{ inputs.alternate-registry }}
+        username: ${{ inputs.alternate-username || inputs.username }}
+        password: ${{ inputs.alternate-password || inputs.password }}
+
+    # NOTE: Each registry gets its tags from the architecture specific images
+    # pushed to itself, so no image is copied between registries.
+    - name: Create and push the multi-architecture image.
+      shell: bash
+      env:
+        ALTERNATE_URL: ${{ steps.registry.outputs.alternate_url }}
+        DESCRIPTION: ${{ inputs.description || github.event.repository.description }}
+        DIGESTS: ${{ inputs.digests }}
+        TAGS: ${{ inputs.tags }}
+        URL: ${{ steps.registry.outputs.url }}
+      run: |
+        set -euo pipefail
+
+        read -r -d '' -a digests <<< "$DIGESTS" || true
+        if (( ${#digests[@]} == 0 )); then
+          echo '::error::No digests to merge given.'
+          exit 1
+        fi
+
+        mapfile -t names < <(bash "${{ github.action_path }}/../derive-tags.sh")
+
+        annotations=()
+        if [[ "$DESCRIPTION" != '' ]]; then
+          annotations=(
+            --annotation
+            "index:org.opencontainers.image.description=${DESCRIPTION}"
+          )
+        fi
+
+        urls=("$URL")
+        if [[ "$ALTERNATE_URL" != '' ]]; then
+          urls+=("$ALTERNATE_URL")
+        fi
+
+        for url in "${urls[@]}"; do
+          tags=()
+          for name in "${names[@]}"; do
+            tags+=(--tag "${url}:${name}")
+          done
+
+          sources=()
+          for digest in "${digests[@]}"; do
+            sources+=("${url}@${digest}")
+          done
+
+          docker buildx imagetools create \
+            "${annotations[@]}" "${tags[@]}" "${sources[@]}"
+          docker buildx imagetools inspect "${url}:${names[0]}"
+        done
+
+    # NOTE: GitHub lists the platform images of a multi-architecture image
+    # as untagged versions, so deleting untagged package versions directly
+    # makes older tags unpullable. This action only deletes untagged images
+    # as a whole.
+    - if: contains(inputs.delete-old-images, 'true') && inputs.registry == 'ghcr.io'
+      name: Delete deprecated images.
+      uses: dataaxiom/ghcr-cleanup-action@v1
+      with:
+        owner: ${{ inputs.ownername || inputs.username }}
+        package: ${{ inputs.name }}
+        keep-n-untagged: 50

@@ -1,0 +1,201 @@
+name: Build and push x86-64 and arm-64 container images
+
+# NOTE: Each architecture is built on its own runner (natively by default) and
+# pushed by digest, so that no runner has to hold the layers of all
+# architectures. A final job merges the digests into the tagged image.
+on:
+  workflow_call:
+    inputs:
+      architecture:
+        default: all
+        description: |
+          Architecture name to build for: "all", "arm-64" or "x86-64".
+        type: string
+      arm-64-runner:
+        default: ubuntu-24.04-arm
+        description: Runner to build the arm-64 image on.
+        type: string
+      x86-64-runner:
+        default: ubuntu-latest
+        description: Runner to build the x86-64 image on.
+        type: string
+      build-args:
+        description: List of build-time variables.
+        type: string
+      build-target:
+        description: Sets the target stage to build.
+        type: string
+      dockerfile-path:
+        description: Sets the path to dockerfile to use for building the image.
+        default: Dockerfile
+        type: string
+
+      cache-key:
+        description: |
+          An explicit key for restoring and saving the cache. Refer creating a
+          cache key.
+        default: buildx-layer
+        type: string
+      cache-restore-keys:
+        description: |
+          An ordered list of prefix-matched keys to use for restoring stale
+          cache if no cache hit occurred for key.
+        default: buildx-layer
+        type: string
+      delete-old-images:
+        description: Delete old images.
+        default: true
+        type: boolean
+      use-cache:
+        description: Use cache when building the image.
+        default: true
+        type: boolean
+
+      name:
+        description: Image name to build.
+        required: true
+        type: string
+      description:
+        description: Image description to annotate with.
+        type: string
+      tags:
+        description: Image tags to use for registering.
+        type: string
+      labels:
+        description: Image labels to annotate registered image with.
+        type: string
+
+      registry:
+        description: Registry to use for image upload.
+        required: true
+        type: string
+      username:
+        description: Login to use for authenticating against registry.
+        required: true
+        type: string
+      ownername:
+        description: |
+          Repository owner name. If not set use provided user names instead.
+        type: string
+
+      alternate-registry:
+        description: Alternate registry to use for image upload.
+        type: string
+      alternate-username:
+        description: |
+          Login to use for authenticating against alternate registry. If not
+          set use the "alternate-username" secret or the main username.
+        type: string
+      alternate-ownername:
+        description: |
+          Repository owner name. If not set use provided user names instead.
+        type: string
+
+    # NOTE: Secrets can not be passed as inputs of a reusable workflow, so the
+    # alternate login can be given as secret as well.
+    secrets:
+      password:
+        description: Password to log into registry.
+        required: true
+      alternate-username:
+        description: |
+          Login to use for authenticating against alternate registry. Takes
+          precedence over the "alternate-username" input.
+      alternate-password:
+        description: |
+          Password to log into alternate registry. If not set use main
+          password.
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        architecture: ${{ fromJSON(inputs.architecture == 'all' && '["x86-64", "arm-64"]' || format('["{0}"]', inputs.architecture)) }}
+
+    runs-on: ${{ matrix.architecture == 'arm-64' && inputs.arm-64-runner || inputs.x86-64-runner }}
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - id: build
+        uses: thaibault/build-image-push-action@main
+        with:
+          architecture: ${{ matrix.architecture }}
+          push-by-digest: true
+          build-args: ${{ inputs.build-args }}
+          build-target: ${{ inputs.build-target }}
+          dockerfile-path: ${{ inputs.dockerfile-path }}
+
+          cache-key: ${{ inputs.cache-key }}
+          cache-restore-keys: ${{ inputs.cache-restore-keys }}
+          use-cache: ${{ inputs.use-cache }}
+
+          name: ${{ inputs.name }}
+          labels: ${{ inputs.labels }}
+
+          registry: ${{ inputs.registry }}
+          username: ${{ inputs.username }}
+          ownername: ${{ inputs.ownername }}
+          password: ${{ secrets.password }}
+
+          alternate-registry: ${{ inputs.alternate-registry }}
+          alternate-username: ${{ secrets.alternate-username || inputs.alternate-username }}
+          alternate-ownername: ${{ inputs.alternate-ownername }}
+          alternate-password: ${{ secrets.alternate-password }}
+
+      - name: Save digest.
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+        run: echo "$DIGEST" > "${RUNNER_TEMP}/digest"
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: ${{ inputs.name }}-digest-${{ matrix.architecture }}
+          path: ${{ runner.temp }}/digest
+          if-no-files-found: error
+          retention-days: 1
+
+  merge:
+    needs: build
+
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          pattern: ${{ inputs.name }}-digest-*
+          path: ${{ runner.temp }}/digests
+
+      - name: Collect digests.
+        id: digests
+        run: |
+          {
+            echo 'digests<<EOM'
+            cat "${RUNNER_TEMP}"/digests/*/digest
+            echo EOM
+          } >> "$GITHUB_OUTPUT"
+
+      - uses: thaibault/build-image-push-action/merge@main
+        with:
+          digests: ${{ steps.digests.outputs.digests }}
+          delete-old-images: ${{ inputs.delete-old-images }}
+
+          name: ${{ inputs.name }}
+          description: ${{ inputs.description }}
+          tags: ${{ inputs.tags }}
+
+          registry: ${{ inputs.registry }}
+          username: ${{ inputs.username }}
+          ownername: ${{ inputs.ownername }}
+          password: ${{ secrets.password }}
+
+          alternate-registry: ${{ inputs.alternate-registry }}
+          alternate-username: ${{ secrets.alternate-username || inputs.alternate-username }}
+          alternate-ownername: ${{ inputs.alternate-ownername }}
+          alternate-password: ${{ secrets.alternate-password }}

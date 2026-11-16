@@ -5,6 +5,12 @@ inputs:
     default: all
     description: |
       Architecture name to build for: "all", "arm-64" or "x86-64".
+  push-by-digest:
+    description: |
+      Push the image of a single architecture untagged and only output its
+      digest. Tags, the description and the cleanup of old images are left to
+      the "merge" action which combines the digests of all architectures.
+    default: false
   build-args:
     description: List of build-time variables.
   build-target:
@@ -66,10 +72,22 @@ inputs:
     description: |
       Password to log into alternate registry. If not set use main password.
 
+outputs:
+  digest:
+    description: Digest of the pushed image.
+    value: ${{ steps.build.outputs.digest }}
+
 runs:
   using: composite
 
   steps:
+    - if: contains(inputs.push-by-digest, 'true') && inputs.architecture == 'all'
+      name: Check that a single architecture is pushed by digest.
+      shell: bash
+      run: |
+        echo '::error::"push-by-digest" needs "architecture" set to "arm-64" or "x86-64".'
+        exit 1
+
     - uses: actions/checkout@v7
 
     - name: Determine image registry urls.
@@ -117,51 +135,66 @@ runs:
         # NOTE: If not set branch name will be used.
         tags: latest
 
+    # NOTE: Prefix cache keys with the architecture, so that builds of
+    # different architectures do not restore the layers of each other.
+    - if: contains(inputs.use-cache, 'true')
+      name: Determine cache keys of the architecture.
+      id: cache_keys
+      shell: bash
+      env:
+        ARCHITECTURE: ${{ inputs.architecture }}
+        KEY: ${{ inputs.cache-key }}
+        RESTORE_KEYS: ${{ inputs.cache-restore-keys }}
+      run: |
+        echo "key=${ARCHITECTURE}-${KEY}" >> "$GITHUB_OUTPUT"
+        {
+          echo 'restore_keys<<EOM'
+          while read -r key; do
+            if [[ "$key" != '' ]]; then
+              echo "${ARCHITECTURE}-${key}"
+            fi
+          done <<< "$RESTORE_KEYS"
+          echo EOM
+        } >> "$GITHUB_OUTPUT"
+
     - if: contains(inputs.use-cache, 'true')
       name: Prepare container cache layers
       uses: actions/cache@v5
       with:
         path: /tmp/buildx-layer-cache
-        key: ${{ inputs.cache-key }}
-        restore-keys: ${{ inputs.cache-restore-keys }}
+        key: ${{ steps.cache_keys.outputs.key }}
+        restore-keys: ${{ steps.cache_keys.outputs.restore_keys }}
 
+    # NOTE: An image pushed by digest is only named by its repositories.
     - name: Set resolved tag by given branch name.
       id: derive_tags
       shell: bash
       env:
         ALTERNATE_URL: ${{ steps.registry.outputs.alternate_url }}
+        PUSH_BY_DIGEST: ${{ contains(inputs.push-by-digest, 'true') }}
         TAGS: ${{ inputs.tags }}
         URL: ${{ steps.registry.outputs.url }}
       run: |
-        names=()
-        if [[ "$TAGS" == '' ]]; then
-          names=("$GITHUB_REF_NAME")
-        else
-          read -r -d '' -a tags <<< "$TAGS" || true
-          for name in "${tags[@]}"; do
-            if [[ "$name" == main || "$name" == master ]]; then
-              name=latest
-            fi
-            names+=("$name")
-          done
-        fi
-
-        declare -A included_names=()
         {
           echo 'names<<EOM'
-          for name in "${names[@]}"; do
-            if [[ "${included_names[$name]:-}" == '' ]]; then
-              included_names[$name]=true
+          if [[ "$PUSH_BY_DIGEST" == true ]]; then
+            echo "$URL"
+            if [[ "$ALTERNATE_URL" != '' ]]; then
+              echo "$ALTERNATE_URL"
+            fi
+          else
+            while read -r name; do
               echo "${URL}:${name}"
               if [[ "$ALTERNATE_URL" != '' ]]; then
                 echo "${ALTERNATE_URL}:${name}"
               fi
-            fi
-          done
+            done < <(bash "${{ github.action_path }}/derive-tags.sh")
+          fi
           echo EOM
         } >> "$GITHUB_OUTPUT"
 
     - name: Build for ${{ inputs.architecture }} architecture and push image
+      id: build
       uses: docker/build-push-action@v7
       with:
         build-args: ${{ inputs.build-args }}
@@ -197,9 +230,11 @@ runs:
         tags: ${{ steps.derive_tags.outputs.names || steps.meta.outputs.tags }}
         labels: ${{ inputs.labels || steps.meta.outputs.labels }}
         # NOTE: Annotations are not parsed as comma separated values like
-        # "outputs", so the description may contain commas.
+        # "outputs", so the description may contain commas. Images pushed by
+        # digest get their description when merged.
         annotations: |
           ${{
+            !contains(inputs.push-by-digest, 'true') &&
             (
               inputs.description || github.event.repository.description
             ) &&
@@ -210,8 +245,14 @@ runs:
             ''
           }}
 
+        outputs: |
+          ${{
+            contains(inputs.push-by-digest, 'true') &&
+            'type=image,push-by-digest=true,name-canonical=true,push=true' ||
+            ''
+          }}
         pull: true
-        push: true
+        push: ${{ !contains(inputs.push-by-digest, 'true') }}
 
     # This ugly bit is necessary if you don't want your cache to grow forever
     # until it hits GitHub's limit of 5GB.
@@ -228,8 +269,12 @@ runs:
     # NOTE: GitHub lists the platform images of a multi-architecture image
     # as untagged versions, so deleting untagged package versions directly
     # makes older tags unpullable. This action only deletes untagged images
-    # as a whole.
-    - if: contains(inputs.delete-old-images, 'true') && inputs.registry == 'ghcr.io'
+    # as a whole. Images pushed by digest are untagged until they are merged,
+    # so they are cleaned up by the "merge" action.
+    - if: |
+        contains(inputs.delete-old-images, 'true') &&
+        !contains(inputs.push-by-digest, 'true') &&
+        inputs.registry == 'ghcr.io'
       name: Delete deprecated images.
       uses: dataaxiom/ghcr-cleanup-action@v1
       with:

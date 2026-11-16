@@ -105,6 +105,159 @@ for deleting old image versions.
     fois pour pousser et pour supprimer les anciennes versions d'image.
 -->
 
+<!--|deDE:Ein Runner pro Architektur-->
+<!--|frFR:Un runner par architecture-->
+### One runner per architecture
+
+Building all architectures in one job keeps the layers of every architecture
+on a single runner, which can run out of disk space for large images, and
+emulates the foreign architecture slowly. The reusable workflow
+".github/workflows/build-image-per-architecture.yaml" instead builds each
+architecture natively on its own runner, pushes it by digest and merges the
+digests into the tagged image in a final job. It takes the same inputs as
+the action, plus "arm-64-runner" (default "ubuntu-24.04-arm") and
+"x86-64-runner" (default "ubuntu-latest"). Passwords are given as secrets:
+<!--deDE:
+    Werden alle Architekturen in einem Job gebaut, liegen die Layer aller
+    Architekturen auf einem einzigen Runner, dem bei großen Images der
+    Speicherplatz ausgehen kann, und die fremde Architektur wird langsam
+    emuliert. Der wiederverwendbare Workflow
+    ".github/workflows/build-image-per-architecture.yaml" baut stattdessen
+    jede Architektur nativ auf einem eigenen Runner, lädt sie per Digest hoch
+    und führt die Digests in einem abschließenden Job zum getaggten Image
+    zusammen. Er nimmt dieselben Eingaben wie die Action entgegen, dazu
+    "arm-64-runner" (Standard "ubuntu-24.04-arm") und "x86-64-runner"
+    (Standard "ubuntu-latest"). Passwörter werden als Secrets übergeben:
+-->
+<!--frFR:
+    Construire toutes les architectures dans un seul job garde les couches de
+    chaque architecture sur un seul runner, qui peut manquer d'espace disque
+    pour les grandes images, et émule lentement l'architecture étrangère. Le
+    workflow réutilisable
+    ".github/workflows/build-image-per-architecture.yaml" construit au
+    contraire chaque architecture nativement sur son propre runner, la pousse
+    par digest et fusionne les digests dans l'image taguée lors d'un job
+    final. Il prend les mêmes entrées que l'action, plus "arm-64-runner"
+    (par défaut "ubuntu-24.04-arm") et "x86-64-runner" (par défaut
+    "ubuntu-latest"). Les mots de passe sont passés comme secrets:
+-->
+
+```yaml
+jobs:
+  main:
+    permissions:
+      contents: read
+      packages: write
+
+    uses: thaibault/build-image-push-action/.github/workflows/build-image-per-architecture.yaml@main
+    with:
+      name: ${{ github.event.repository.name }}
+      tags: ${{ github.ref_name }} latest
+      description: ${{ github.event.repository.description }}
+
+      registry: ghcr.io
+      username: ${{ github.repository_owner }}
+    secrets:
+      password: ${{ secrets.GITHUB_TOKEN }}
+```
+
+The "env" and "runner" contexts are not available in "with" of a reusable
+workflow and secrets can only be passed under "secrets". Therefore
+"alternate-username" can be given as secret as well. Arm runners may not be
+available for private repositories on every plan, set "arm-64-runner" to
+"ubuntu-latest" to emulate arm-64 there instead.
+<!--deDE:
+    Die Kontexte "env" und "runner" sind in "with" eines wiederverwendbaren
+    Workflows nicht verfügbar und Secrets lassen sich nur unter "secrets"
+    übergeben. Deshalb kann "alternate-username" auch als Secret angegeben
+    werden. Arm-Runner stehen privaten Repositorys nicht in jedem Tarif zur
+    Verfügung, setzen Sie dort "arm-64-runner" auf "ubuntu-latest", um arm-64
+    stattdessen zu emulieren.
+-->
+<!--frFR:
+    Les contextes "env" et "runner" ne sont pas disponibles dans "with" d'un
+    workflow réutilisable et les secrets ne peuvent être passés que sous
+    "secrets". C'est pourquoi "alternate-username" peut aussi être donné
+    comme secret. Les runners arm ne sont pas disponibles pour les dépôts
+    privés dans tous les forfaits, mettez-y "arm-64-runner" à "ubuntu-latest"
+    pour émuler arm-64 à la place.
+-->
+
+<!--|deDE:Gemeinsamer Workflow-->
+<!--|frFR:Workflow partagé-->
+### Shared workflow
+
+".github/workflows/publish-repository-image.yaml" wraps the reusable workflow
+with sensible defaults, so that a repository only declares its triggers. It
+pushes "ghcr.io/&lt;owner&gt;/&lt;repository&gt;" and, unless
+"alternate-registry" is set to an empty string, "docker.io" as well. Tags
+default to the version of a "prepare-release-event" or the branch or tag name
+plus "latest" ("devcontainer" for a "Dockerfile.devcontainer"). The cache is
+never used for scheduled runs. Afterwards an "image-built" repository dispatch
+is sent to the repository:
+<!--deDE:
+    ".github/workflows/publish-repository-image.yaml" umschließt den
+    wiederverwendbaren Workflow mit sinnvollen Vorgaben, sodass ein
+    Repository nur noch seine Auslöser deklariert. Er lädt nach
+    "ghcr.io/&lt;owner&gt;/&lt;repository&gt;" und, sofern
+    "alternate-registry" nicht auf eine leere Zeichenkette gesetzt ist,
+    zusätzlich nach "docker.io" hoch. Tags sind standardmäßig die Version
+    eines "prepare-release-event" oder der Branch- bzw. Tag-Name plus
+    "latest" ("devcontainer" für ein "Dockerfile.devcontainer"). Für geplante
+    Läufe wird der Cache nie verwendet. Danach wird ein "image-built"
+    Repository-Dispatch an das Repository gesendet:
+-->
+<!--frFR:
+    ".github/workflows/publish-repository-image.yaml" enveloppe le workflow
+    réutilisable avec des valeurs par défaut raisonnables, de sorte qu'un
+    dépôt ne déclare plus que ses déclencheurs. Il pousse vers
+    "ghcr.io/&lt;owner&gt;/&lt;repository&gt;" et, sauf si
+    "alternate-registry" est une chaîne vide, aussi vers "docker.io". Les
+    tags sont par défaut la version d'un "prepare-release-event" ou le nom de
+    la branche ou du tag plus "latest" ("devcontainer" pour un
+    "Dockerfile.devcontainer"). Le cache n'est jamais utilisé pour les
+    exécutions planifiées. Ensuite, un repository dispatch "image-built" est
+    envoyé au dépôt:
+-->
+
+```yaml
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+    inputs:
+      tags:
+        description: Image tags to use for registering.
+
+jobs:
+  main:
+    permissions:
+      contents: write
+      packages: write
+
+    uses: thaibault/build-image-push-action/.github/workflows/publish-repository-image.yaml@main
+    with:
+      tags: ${{ inputs.tags }}
+    secrets:
+      alternate-username: ${{ secrets.DOCKERHUB_USERNAME }}
+      alternate-password: ${{ secrets.DOCKERHUB_TOKEN }}
+```
+
+It takes "architecture", "arm-64-runner", "x86-64-runner", "build-args",
+"build-target", "dockerfile-path", "tags", "use-cache" and
+"alternate-registry" as inputs.
+<!--deDE:
+    Er nimmt "architecture", "arm-64-runner", "x86-64-runner", "build-args",
+    "build-target", "dockerfile-path", "tags", "use-cache" und
+    "alternate-registry" als Eingaben entgegen.
+-->
+<!--frFR:
+    Il prend "architecture", "arm-64-runner", "x86-64-runner", "build-args",
+    "build-target", "dockerfile-path", "tags", "use-cache" et
+    "alternate-registry" comme entrées.
+-->
+
 <!--|deDE:Eingaben-->
 <!--|frFR:Entrées-->
 Inputs
@@ -127,6 +280,7 @@ Inputs
 - "build-args": build arguments, one "NAME=value" per line.<!--deDE:"build-args": Build-Argumente, ein "NAME=value" pro Zeile.--><!--frFR:"build-args": arguments de construction, un "NAME=value" par ligne.-->
 - "build-target": stage of a multi-stage "Dockerfile" to build. Defaults to the last one.<!--deDE:"build-target": zu bauende Stufe eines mehrstufigen "Dockerfile". Standardmäßig die letzte.--><!--frFR:"build-target": étape d'un "Dockerfile" multi-étapes à construire. Par défaut, la dernière.-->
 - "dockerfile-path": path of the "Dockerfile", default "Dockerfile". The build context is always the repository root.<!--deDE:"dockerfile-path": Pfad des "Dockerfile", Standard "Dockerfile". Der Build-Kontext ist immer die Wurzel des Repositorys.--><!--frFR:"dockerfile-path": chemin du "Dockerfile", par défaut "Dockerfile". Le contexte de construction est toujours la racine du dépôt.-->
+- "push-by-digest": "true" pushes the image of a single "architecture" untagged and outputs its "digest", see [Merging](#merging). Default "false".<!--deDE:"push-by-digest": "true" lädt das Image einer einzelnen "architecture" ohne Tag hoch und gibt seinen "digest" aus, siehe [Zusammenführen](#merging). Standard "false".--><!--frFR:"push-by-digest": "true" pousse l'image d'une seule "architecture" sans tag et renvoie son "digest", voir [Fusion](#merging). Par défaut "false".-->
 
 <!--|deDE:Cache und Aufräumen-->
 <!--|frFR:Cache et nettoyage-->
@@ -221,18 +375,23 @@ workflow runs for.
 <!--|frFR:Cache-->
 ### Cache
 
-The layer cache lives in the GitHub actions cache. Since an existing cache
-entry is never overwritten, give each run its own "cache-key" and restore from
-a common prefix:
+The layer cache lives in the GitHub actions cache. Both keys are prefixed with
+the "architecture", so builds of different architectures do not share a
+cache. Since an existing cache entry is never overwritten, give each run its
+own "cache-key" and restore from a common prefix:
 <!--deDE:
-    Der Layer-Cache liegt im GitHub-Actions-Cache. Da ein bestehender
-    Cache-Eintrag nie überschrieben wird, geben Sie jedem Lauf einen eigenen
-    "cache-key" und stellen Sie über ein gemeinsames Präfix wieder her:
+    Der Layer-Cache liegt im GitHub-Actions-Cache. Beiden Schlüsseln wird die
+    "architecture" vorangestellt, sodass sich Builds verschiedener
+    Architekturen keinen Cache teilen. Da ein bestehender Cache-Eintrag nie
+    überschrieben wird, geben Sie jedem Lauf einen eigenen "cache-key" und
+    stellen Sie über ein gemeinsames Präfix wieder her:
 -->
 <!--frFR:
-    Le cache de couches réside dans le cache des actions GitHub. Comme une
-    entrée de cache existante n'est jamais écrasée, donnez à chaque exécution
-    sa propre "cache-key" et restaurez à partir d'un préfixe commun:
+    Le cache de couches réside dans le cache des actions GitHub. Les deux
+    clés sont préfixées par l'"architecture", de sorte que les constructions
+    d'architectures différentes ne partagent pas de cache. Comme une entrée
+    de cache existante n'est jamais écrasée, donnez à chaque exécution sa
+    propre "cache-key" et restaurez à partir d'un préfixe commun:
 -->
 
 ```yaml
@@ -277,4 +436,38 @@ Images in other registries are not touched.
     plus récentes. Les parties spécifiques à une architecture des images qui
     ont encore un tag sont conservées. Les images des autres registres ne
     sont pas touchées.
+-->
+
+<!--|deDE:Zusammenführen-->
+<!--|frFR:Fusion-->
+### Merging
+
+The action "thaibault/build-image-push-action/merge" combines images pushed
+with "push-by-digest" into one multi-architecture image. It takes their
+"digests" (space or newline separated), creates the image in every registry
+from the digests pushed there, tags and annotates it like the action does and
+cleans up old images afterwards. Apart from "digests" it takes the inputs
+"name", "tags", "description", "delete-old-images" and the registry inputs of
+the action. The reusable workflow uses it in its final job.
+<!--deDE:
+    Die Action "thaibault/build-image-push-action/merge" führt mit
+    "push-by-digest" hochgeladene Images zu einem Multi-Architektur-Image
+    zusammen. Sie nimmt deren "digests" (durch Leerzeichen oder Zeilenumbrüche
+    getrennt) entgegen, erzeugt das Image in jeder Registry aus den dorthin
+    hochgeladenen Digests, taggt und annotiert es wie die Action und räumt
+    danach alte Images auf. Neben "digests" nimmt sie die Eingaben "name",
+    "tags", "description", "delete-old-images" und die Registry-Eingaben der
+    Action entgegen. Der wiederverwendbare Workflow nutzt sie in seinem
+    abschließenden Job.
+-->
+<!--frFR:
+    L'action "thaibault/build-image-push-action/merge" combine les images
+    poussées avec "push-by-digest" en une image multi-architecture. Elle
+    prend leurs "digests" (séparés par des espaces ou des retours à la
+    ligne), crée l'image dans chaque registre à partir des digests qui y ont
+    été poussés, la tague et l'annote comme le fait l'action et nettoie
+    ensuite les anciennes images. Outre "digests", elle prend les entrées
+    "name", "tags", "description", "delete-old-images" et les entrées de
+    registre de l'action. Le workflow réutilisable l'utilise dans son job
+    final.
 -->
